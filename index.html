@@ -1,0 +1,1816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RS构型学习工具 · 315化学（农）</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230d1117'/%3E%3Ccircle cx='32' cy='32' r='6' fill='%23fbbf24'/%3E%3Cline x1='32' y1='32' x2='32' y2='12' stroke='%23e6edf3' stroke-width='3'/%3E%3Cline x1='32' y1='32' x2='50' y2='42' stroke='%2300d4aa' stroke-width='4' stroke-linecap='round'/%3E%3Cline x1='32' y1='32' x2='14' y2='42' stroke='%2360a5fa' stroke-width='2' stroke-dasharray='3,2'/%3E%3Cline x1='32' y1='32' x2='32' y2='52' stroke='%23e6edf3' stroke-width='3'/%3E%3Ctext x='48' y='18' font-size='14' font-weight='bold' fill='%2300d4aa' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E">
+<script src="https://3dmol.org/build/3Dmol-min.js"></script>
+<style>
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#1c2128;--border:#30363d;
+  --text:#e6edf3;--text2:#8b949e;--text3:#6e7681;
+  --accent:#00d4aa;--accent2:#0ea5e9;
+  --r-color:#f87171;--s-color:#60a5fa;
+  --p1:#fbbf24;--p2:#a78bfa;--p3:#34d399;--p4:#9ca3af;
+  --radius:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{height:100%;height:100dvh}
+body{height:100%;height:100dvh;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);overflow:hidden;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font-family:inherit;font-size:15px}
+code{background:var(--bg3);padding:1px 5px;border-radius:3px;font-size:12px}
+
+.topbar{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;z-index:100}
+.topbar h1{font-size:17px;font-weight:600;letter-spacing:.3px}
+.topbar h1 span{color:var(--accent);font-size:12px;margin-left:8px;font-weight:400}
+.mode-tabs{display:flex;gap:4px;background:var(--bg3);padding:3px;border-radius:8px}
+.mode-tab{padding:6px 16px;border-radius:6px;font-size:13px;color:var(--text2);transition:.2s}
+.mode-tab.active{background:var(--accent);color:#0d1117;font-weight:600}
+.help-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);color:var(--text3);font-size:14px;font-weight:600;transition:.2s;margin-left:4px;background:transparent}
+.help-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+.main{display:flex;height:calc(100vh - 52px);height:calc(100dvh - 52px);overflow:hidden}
+.panel{background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;transition:width .25s ease,opacity .2s ease;min-height:0;height:100%}
+.panel-left{width:310px}
+.panel-left.collapsed{width:0;opacity:0;overflow:hidden;border-right:none}
+.panel-right{width:330px;border-right:none;border-left:1px solid var(--border)}
+.viewer-wrap{flex:1;position:relative;min-width:280px}
+#viewer3d{width:100%;height:100%;position:absolute;top:0;left:0}
+#viewer3d .viewer_3Dmoljs{width:100%!important;height:100%!important}
+#viewer3d canvas{width:100%!important;height:100%!important;display:block}
+.panel-toggle{position:absolute;top:50%;transform:translateY(-50%);z-index:20;width:22px;height:52px;border-radius:0 8px 8px 0;border:1px solid var(--border);border-left:none;background:var(--bg2);color:var(--text2);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:left .25s ease,background .2s,color .2s;left:310px}
+.panel-toggle:hover{border-color:var(--accent);color:var(--accent);background:var(--bg3)}
+.panel-toggle.collapsed{left:0}
+.panel-left{width:310px;position:relative}
+.panel-left.collapsed{width:0;opacity:0;overflow:hidden;border-right:none}
+/* 练习模式：左栏默认收起（用collapsed class，允许按钮再展开），3D区域铺满 */
+.main.quiz-mode .panel-left{width:0;opacity:0;overflow:hidden;border-right:none}
+.main.quiz-mode .panel-left.show{width:310px;opacity:1;overflow-y:auto;border-right:1px solid var(--border)}
+.main.quiz-mode .panel{transition:none}
+.main.quiz-mode .panel-toggle{transition:none}
+.main.quiz-mode .viewer-wrap{flex:1;min-width:0}
+.main.quiz-mode .panel-right{width:420px;min-width:0;max-width:none;flex-shrink:0}
+@media(max-width:768px){.panel-toggle{display:none}}
+
+.panel-section{padding:14px 16px;border-bottom:1px solid var(--border)}
+.panel-section:last-child{border-bottom:none}
+.section-title{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.section-title::before{content:"";width:3px;height:14px;background:var(--accent);border-radius:2px}
+
+.input-tabs{display:flex;gap:2px;margin-bottom:12px}
+.input-tab{flex:1;padding:8px 0;text-align:center;font-size:12.5px;color:var(--text2);border-bottom:2px solid transparent;transition:.2s}
+.input-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+.smiles-row{display:flex;gap:8px}
+.smiles-row input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:9px 10px;color:var(--text);font-size:13px;outline:none;min-width:0}
+.smiles-row input:focus{border-color:var(--accent)}
+.btn{padding:9px 14px;border-radius:6px;font-size:13px;font-weight:500;transition:.2s;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#0d1117}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-ghost{background:var(--bg3);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm{padding:6px 10px;font-size:12px}
+
+.preset-cat{margin-bottom:12px}
+.preset-cat-title{font-size:11px;color:var(--text3);margin-bottom:6px;padding-left:2px;font-weight:600}
+.preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.preset-item{padding:9px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;font-size:12px;text-align:left;transition:.15s;line-height:1.3;position:relative;overflow:hidden}
+.preset-item:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,212,170,0.06);transform:translateY(-1px)}
+.preset-item:active{transform:translateY(0)}
+.preset-item .sub{display:block;font-size:10px;color:var(--text3);margin-top:2px}
+
+/* 滚动条美化 */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+
+.builder-hint{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:10px;padding:8px 10px;background:var(--bg3);border-radius:6px;border-left:3px solid var(--accent2)}
+.builder-center-switch{display:flex;gap:4px;margin-bottom:10px}
+.center-tab{flex:1;padding:6px;font-size:12px;border-radius:6px;background:var(--bg3);color:var(--text2);transition:.2s;border:1px solid transparent}
+.center-tab.active{background:var(--accent);color:#0d1117;font-weight:600}
+.builder-canvas-wrap{display:flex;justify-content:center;margin-bottom:10px;background:var(--bg3);border-radius:8px;padding:8px}
+#builderCanvas{cursor:pointer;touch-action:none}
+.builder-controls{display:flex;flex-direction:column;gap:6px}
+.builder-row{display:flex;align-items:center;gap:6px}
+.builder-row label{font-size:11px;color:var(--text2);width:32px;flex-shrink:0;text-align:center}
+.builder-row select{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 6px;color:var(--text);font-size:12px;outline:none;min-width:0}
+.builder-row select:focus{border-color:var(--accent)}
+.builder-subtitle{font-size:11px;color:var(--accent);font-weight:600;padding:6px 0 2px;border-top:1px solid var(--border);margin-top:4px}
+.wedge-select{width:62px;flex:none}
+
+.viewer-overlay{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:10;gap:8px;flex-wrap:wrap}
+.viewer-badge{pointer-events:auto;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;order:2;margin-left:auto}
+.rs-badge{font-size:28px;font-weight:800;letter-spacing:2px;line-height:1}
+.rs-badge.r{color:var(--r-color)}
+.rs-badge.s{color:var(--s-color)}
+.dl-tag{font-size:11px;color:var(--text3);margin-top:4px}
+.chiral-tabs{pointer-events:auto;display:flex;gap:4px;background:rgba(13,17,23,.88);backdrop-filter:blur(8px);padding:4px;border-radius:8px;border:1px solid var(--border);flex-wrap:wrap}
+.chiral-tab{padding:5px 10px;border-radius:5px;font-size:12px;color:var(--text2)}
+.chiral-tab.active{background:var(--accent);color:#0d1117;font-weight:600}
+
+.viewer-bottom{position:absolute;bottom:calc(12px + env(safe-area-inset-bottom));left:12px;right:12px;display:flex;justify-content:center;gap:8px;z-index:10;flex-wrap:wrap}
+.viewer-btn{background:rgba(13,17,23,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-size:13px;color:var(--text);transition:.2s;min-height:40px;white-space:nowrap}
+.viewer-btn:hover{border-color:var(--accent);color:var(--accent)}
+.viewer-btn.active{background:var(--accent);color:#0d1117;border-color:var(--accent)}
+.viewer-hidden-msg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--text3);font-size:14px;z-index:5;pointer-events:none}
+.viewer-hidden-msg span{display:block;font-size:32px;margin-bottom:8px;opacity:.3}
+
+.result-card{background:var(--bg3);border-radius:8px;padding:14px;margin-bottom:10px}
+.result-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.result-value{font-size:22px;font-weight:700}
+.result-value.r{color:var(--r-color)}
+.result-value.s{color:var(--s-color)}
+.result-sub{font-size:12px;color:var(--text2);margin-top:6px;line-height:1.5}
+
+.cip-list{display:flex;flex-direction:column;gap:5px}
+.cip-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg3);border-radius:8px;font-size:13px;transition:.15s;border:1px solid transparent}
+.cip-item:hover{border-color:var(--border)}
+.cip-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;color:#0d1117}
+.cip-num.n1{background:var(--p1)}.cip-num.n2{background:var(--p2)}.cip-num.n3{background:var(--p3)}.cip-num.n4{background:var(--p4)}
+.cip-group{flex:1;font-weight:500}
+.cip-atom{font-size:10px;color:var(--text3)}
+
+.judge-steps{font-size:13px;line-height:1.7;color:var(--text2)}
+.judge-steps .step{margin-bottom:8px;padding-left:22px;position:relative}
+.judge-steps .step::before{content:attr(data-n);position:absolute;left:0;top:1px;width:16px;height:16px;background:var(--bg3);border-radius:50%;font-size:10px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-weight:700}
+.judge-steps .highlight{color:var(--accent);font-weight:600}
+.judge-steps .r-text{color:var(--r-color);font-weight:600}
+.judge-steps .s-text{color:var(--s-color);font-weight:600}
+
+.projection-tabs{display:flex;gap:4px;margin-bottom:10px}
+.proj-tab{flex:1;padding:6px 0;font-size:12px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);text-align:center}
+.proj-tab.active{border-color:var(--accent);color:var(--accent);background:rgba(0,212,170,.08)}
+.projection-wrap{display:flex;justify-content:center;padding:6px 0;background:var(--bg3);border-radius:8px;min-height:180px;align-items:center}
+.proj-note{font-size:11px;color:var(--text3);text-align:center;line-height:1.6;margin-top:8px}
+
+.knowledge-card{background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:11px;line-height:1.6;color:var(--text2)}
+.knowledge-card h4{color:var(--accent);font-size:11.5px;margin-bottom:4px;font-weight:600}
+.knowledge-card .key{color:var(--text);font-weight:600}
+.knowledge-card .formula{background:var(--bg);padding:6px 8px;border-radius:4px;margin:4px 0;font-family:monospace;font-size:11px;display:block}
+.knowledge-wrap,#knowledgeBody{max-height:2000px;overflow:hidden;transition:max-height .35s ease}
+.knowledge-wrap.hide,#knowledgeBody.hide{max-height:0;padding:0;margin:0}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;font-size:13px}
+.toggle-row label{color:var(--text2)}
+.toggle{position:relative;width:38px;height:20px;background:var(--bg3);border-radius:10px;cursor:pointer;transition:.2s;border:1px solid var(--border);flex-shrink:0}
+.toggle.on{background:var(--accent);border-color:var(--accent)}
+.toggle::after{content:"";position:absolute;top:1px;left:1px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}
+.toggle.on::after{left:19px}
+.style-row{display:flex;gap:5px;margin-top:8px}
+.style-btn{flex:1;padding:6px 0;font-size:11px;border-radius:5px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);text-align:center}
+.style-btn.active{border-color:var(--accent);color:var(--accent)}
+
+.quiz-question{font-size:14px;line-height:1.6;margin-bottom:12px;color:var(--text);background:var(--bg3);padding:10px 12px;border-radius:8px;border-left:3px solid var(--accent)}
+.quiz-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.quiz-opt{padding:16px;text-align:center;border-radius:10px;font-size:18px;font-weight:700;background:var(--bg3);border:2px solid var(--border);transition:.2s;min-height:54px}
+.quiz-opt:hover{border-color:var(--accent);background:rgba(0,212,170,.08)}
+.quiz-opt.correct{border-color:var(--p3);background:rgba(52,211,153,.15);color:var(--p3)}
+.quiz-opt.wrong{border-color:var(--r-color);background:rgba(248,113,113,.15);color:var(--r-color)}
+.quiz-opt:disabled{cursor:default;opacity:.7}
+.quiz-score{display:flex;justify-content:space-around;padding:12px;background:var(--bg3);border-radius:10px;margin-bottom:12px}
+.quiz-score-item{text-align:center}
+.quiz-score-num{font-size:22px;font-weight:700;color:var(--accent)}
+.quiz-score-label{font-size:11px;color:var(--text3);margin-top:2px}
+.quiz-explain{font-size:12.5px;line-height:1.8;color:var(--text2);padding:12px;background:var(--bg3);border-radius:8px;border-left:3px solid var(--accent2);display:none;margin-top:10px}
+.quiz-explain.show{display:block}
+.quiz-explain strong{color:var(--text)}
+.quiz-type-row{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.quiz-type-btn{padding:6px 14px;font-size:12px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);transition:.2s}
+.quiz-type-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,212,170,.1)}
+
+.empty-state{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--text3);z-index:5}
+.empty-state p{font-size:14px;margin-top:8px}
+.loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:20;color:var(--text2);font-size:14px;display:none}
+.loading.show{display:block}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 20px;font-size:13px;z-index:1000;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1;top:70px}
+
+/* 新手引导 */
+.guide-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px}
+.guide-overlay.hidden{display:none}
+.guide-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+.guide-header{text-align:center;margin-bottom:20px}
+.guide-header h3{font-size:20px;font-weight:700;color:var(--accent);margin-bottom:4px}
+.guide-header p{font-size:13px;color:var(--text3)}
+.guide-steps{display:flex;flex-direction:column;gap:14px;margin-bottom:22px}
+.guide-step{display:flex;gap:12px;align-items:flex-start}
+.guide-num{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#0d1117;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.guide-text{flex:1}
+.guide-text strong{display:block;font-size:14px;color:var(--text);margin-bottom:2px}
+.guide-text span{font-size:12px;color:var(--text2);line-height:1.5}
+.guide-start{width:100%;padding:12px;background:var(--accent);color:#0d1117;border-radius:8px;font-size:15px;font-weight:600;transition:.2s}
+.guide-start:hover{filter:brightness(1.1)}
+.guide-footer{text-align:center;font-size:11px;color:var(--text3);margin-top:10px}
+
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+@media(max-width:1100px){
+  .panel-left{width:240px}
+  .panel-right{width:270px}
+  .panel-toggle{left:240px}
+  .main.quiz-mode .panel-left.show{width:240px}
+  .main.quiz-mode .panel-right{width:360px}
+  .preset-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:900px){
+  html,body{height:auto;min-height:100%;overflow-x:hidden;overflow-y:auto}
+  .main{flex-direction:column;overflow:visible;height:auto;min-height:calc(100vh - 52px)}
+  .panel{width:100%;border-right:none;border-bottom:1px solid var(--border);max-height:none;height:auto;min-height:0;overflow:visible}
+  .panel-left{order:2}
+  .viewer-wrap{order:1;height:44vh;height:44dvh;min-height:280px;flex-shrink:0}
+  .panel-right{order:3;border-left:none}
+  /* 练习模式：纵向布局下完全隐藏左栏，3D在上答题区在下 */
+  .main.quiz-mode .panel-left{display:none}
+  .main.quiz-mode .panel-left.show{display:none}
+  .main.quiz-mode .viewer-wrap{order:1;height:52vh;height:52dvh;min-height:300px}
+  .main.quiz-mode .panel-right{order:2;width:100%;max-width:none}
+  .preset-grid{grid-template-columns:1fr 1fr 1fr}
+}
+@media(max-width:560px){
+  .preset-grid{grid-template-columns:1fr 1fr}
+  .topbar h1{font-size:15px}
+  .topbar h1 span{display:none}
+  .mode-tab{padding:6px 12px;font-size:12px}
+  .viewer-wrap{height:40vh;height:40dvh;min-height:240px}
+  .viewer-btn{padding:8px 12px;font-size:12px;min-height:36px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>RS构型学习工具<span>315化学（农）</span></h1>
+  <div class="mode-tabs">
+    <button class="mode-tab active" onclick="switchMode('learn')">学习模式</button>
+    <button class="mode-tab" onclick="switchMode('quiz')">练习模式</button>
+    <button class="help-btn" onclick="showGuide()" title="使用帮助">?</button>
+  </div>
+</div>
+
+<div class="main">
+  <button class="panel-toggle" id="toggleLeft" onclick="toggleLeftPanel()" title="收起左侧栏">◀</button>
+  <!-- 左侧面板 -->
+  <div class="panel panel-left">
+    <div class="panel-section">
+      <div class="input-tabs">
+        <button class="input-tab active" onclick="switchInput('preset')">预设化合物</button>
+        <button class="input-tab" onclick="switchInput('builder')">二维构建器</button>
+        <button class="input-tab" onclick="switchInput('smiles')">SMILES</button>
+      </div>
+
+      <div id="input-preset">
+        <div class="preset-cat">
+          <div class="preset-cat-title">单手性中心 · 烃的衍生物</div>
+          <div class="preset-grid" id="preset-single1"></div>
+        </div>
+        <div class="preset-cat">
+          <div class="preset-cat-title">单手性中心 · 氨基酸/糖类</div>
+          <div class="preset-grid" id="preset-single2"></div>
+        </div>
+        <div class="preset-cat">
+          <div class="preset-cat-title">双手性中心</div>
+          <div class="preset-grid" id="preset-double"></div>
+        </div>
+        <div class="preset-cat">
+          <div class="preset-cat-title">环状 & 特殊</div>
+          <div class="preset-grid" id="preset-cyclic"></div>
+        </div>
+      </div>
+
+      <div id="input-builder" style="display:none">
+        <div class="builder-hint">
+          选择手性碳数量，下拉菜单直接选基团和键型（纸面/实楔朝前/虚楔朝后），还原试卷结构后点"生成3D模型"。
+        </div>
+        <div class="builder-center-switch">
+          <button class="center-tab active" onclick="setBuilderCenters(1,this)">单手性中心</button>
+          <button class="center-tab" onclick="setBuilderCenters(2,this)">双手性中心</button>
+        </div>
+        <div class="builder-canvas-wrap">
+          <canvas id="builderCanvas" width="280" height="240"></canvas>
+        </div>
+        <div class="builder-controls" id="builderControls"></div>
+        <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-primary" style="flex:1;min-width:100px" onclick="applyBuilder()">生成3D模型</button>
+          <button class="btn btn-ghost btn-sm" onclick="swapEnantiomer()">对映体</button>
+          <button class="btn btn-ghost btn-sm" onclick="randomBuilder()">随机</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetBuilder()">重置</button>
+        </div>
+      </div>
+
+      <div id="input-smiles" style="display:none">
+        <div class="smiles-row">
+          <input type="text" id="smilesInput" placeholder="如 C[C@H](O)C(=O)O" spellcheck="false">
+          <button class="btn btn-primary" onclick="applySmiles()">解析</button>
+        </div>
+        <p style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.6">
+          手性碳用 @(S) 或 @@(R)。示例：<br>
+          S-乳酸: <code>C[C@H](O)C(=O)O</code><br>
+          R-乳酸: <code>C[C@@H](O)C(=O)O</code>
+        </p>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">显示设置</div>
+      <div class="toggle-row"><label>氢原子</label><div class="toggle on" id="tgHydrogens" onclick="toggleDisp(this)"></div></div>
+      <div class="toggle-row"><label>优先级编号</label><div class="toggle on" id="tgLabels" onclick="toggleDisp(this)"></div></div>
+      <div class="toggle-row"><label>基团名称</label><div class="toggle on" id="tgGroupNames" onclick="toggleDisp(this)"></div></div>
+      <div class="toggle-row"><label>R/S徽章</label><div class="toggle on" id="tgBadge" onclick="toggleDisp(this)"></div></div>
+      <div class="style-row">
+        <button class="style-btn active" onclick="setStyle('stick',this)">棍状</button>
+        <button class="style-btn" onclick="setStyle('ball',this)">球棍</button>
+        <button class="style-btn" onclick="setStyle('space',this)">填充</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 中央3D视图 -->
+  <div class="viewer-wrap">
+    <div id="viewer3d"></div>
+    <div class="empty-state" id="emptyState">
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.4"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg>
+      <p>从左侧选择化合物或构建分子</p>
+    </div>
+    <div class="loading" id="loading"><div class="spinner"></div>加载中...</div>
+    <div class="viewer-overlay" id="viewerOverlay" style="display:none">
+      <div class="viewer-badge">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:2px">手性中心构型</div>
+        <div class="rs-badge" id="rsBadge">—</div>
+        <div class="dl-tag" id="dlTag"></div>
+      </div>
+      <div class="chiral-tabs" id="chiralTabs" style="display:none"></div>
+    </div>
+    <div class="viewer-bottom" id="viewerBottom" style="display:none">
+      <button class="viewer-btn" id="btnJudgeView" onclick="toggleJudgeView()">判断视角</button>
+      <button class="viewer-btn" onclick="resetView()">重置</button>
+      <button class="viewer-btn" onclick="toggleRotate()">自动旋转</button>
+      <button class="viewer-btn" id="btnHideModel" onclick="toggleModelVisible()">隐藏模型</button>
+    </div>
+  </div>
+
+  <!-- 右侧面板 -->
+  <div class="panel panel-right">
+    <div id="learnContent">
+      <div class="panel-section" id="resultSection" style="display:none">
+        <div class="section-title">构型结果</div>
+        <div class="result-card">
+          <div class="result-label">当前手性中心</div>
+          <div class="result-value" id="resultValue">—</div>
+          <div class="result-sub" id="resultSub"></div>
+        </div>
+      </div>
+
+      <div class="panel-section" id="cipSection" style="display:none">
+        <div class="section-title">CIP基团优先级</div>
+        <div class="cip-list" id="cipList"></div>
+      </div>
+
+      <div class="panel-section" id="judgeSection" style="display:none">
+        <div class="section-title">判断步骤</div>
+        <div class="judge-steps" id="judgeSteps"></div>
+      </div>
+
+      <div class="panel-section" id="projSection" style="display:none">
+        <div class="section-title">投影式对照</div>
+        <div class="projection-tabs">
+          <button class="proj-tab active" onclick="switchProj('fischer',this)">Fischer</button>
+          <button class="proj-tab" onclick="switchProj('newman',this)">Newman</button>
+        </div>
+        <div class="projection-wrap" id="projWrap">
+          <svg id="projSvg" width="260" height="230"></svg>
+        </div>
+        <div class="proj-note" id="projNote"></div>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-title" style="cursor:pointer;justify-content:space-between" onclick="document.getElementById('knowledgeBody').classList.toggle('hide');this.querySelector('.fold-icon').textContent=document.getElementById('knowledgeBody').classList.contains('hide')?'▶':'▼'">
+          <span>知识速查</span><span class="fold-icon" style="font-size:10px">▼</span>
+        </div>
+        <div id="knowledgeBody">
+        <div class="knowledge-card">
+          <h4>CIP 次序规则</h4>
+          ① 直接相连原子<span class="key">原子序数大</span>的优先（I&gt;Br&gt;Cl&gt;S&gt;P&gt;F&gt;O&gt;N&gt;C&gt;H）<br>
+          ② 原子相同时，比较其连接的<span class="key">其他原子</span>（从大到小逐个比）<br>
+          ③ 双键/三键视为连接<span class="key">两个/三个</span>相同原子<br>
+          ④ 同位素<span class="key">质量数大</span>的优先（D&gt;H）
+        </div>
+        <div class="knowledge-card">
+          <h4>R/S 判断口诀</h4>
+          最小基团<span class="key">朝后</span>时：1→2→3 <span class="r-text">顺时针=R</span>，<span class="s-text">逆时针=S</span><br>
+          最小基团<span class="key">朝前</span>时：结论<span class="key">相反</span>（顺S逆R）
+        </div>
+        <div class="knowledge-card">
+          <h4>Fischer 投影式规则</h4>
+          <span class="key">横前竖后</span>：横键基团朝观察者，竖键基团远离<br>
+          最小基团在<span class="key">竖键</span>：顺R逆S（正常判断）<br>
+          最小基团在<span class="key">横键</span>：顺S逆R（结论反转）
+        </div>
+        <div class="knowledge-card">
+          <h4>D/L 标记法</h4>
+          以<span class="key">甘油醛</span>为标准：OH在右=D，在左=L<br>
+          氨基酸：氨基在左=<span class="key">L</span>（天然蛋白质氨基酸均为L型）<br>
+          糖类：编号最大的手性碳OH在右=<span class="key">D</span>（天然糖多为D型）<br>
+          <span style="color:var(--text3);font-size:11px">注意：D/L ≠ R/S，二者无必然对应关系</span>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 练习模式 -->
+    <div id="quizContent" style="display:none">
+      <div class="panel-section">
+        <div class="section-title">练习答题</div>
+        <div class="quiz-score">
+          <div class="quiz-score-item"><div class="quiz-score-num" id="quizCorrect">0</div><div class="quiz-score-label">正确</div></div>
+          <div class="quiz-score-item"><div class="quiz-score-num" id="quizWrong">0</div><div class="quiz-score-label">错误</div></div>
+          <div class="quiz-score-item"><div class="quiz-score-num" id="quizRate">0%</div><div class="quiz-score-label">正确率</div></div>
+        </div>
+        <div class="quiz-type-row">
+          <button class="quiz-type-btn active" onclick="setQuizType('rs',this)">R/S判断</button>
+          <button class="quiz-type-btn" onclick="setQuizType('cip',this)">CIP排序</button>
+          <button class="quiz-type-btn" onclick="setQuizType('fischer',this)">Fischer判断</button>
+        </div>
+        <div class="quiz-question" id="quizQuestion">点击"下一题"开始练习</div>
+        <div class="quiz-options" id="quizOptions">
+          <button class="quiz-opt" onclick="answerQuiz('R')">R</button>
+          <button class="quiz-opt" onclick="answerQuiz('S')">S</button>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" style="flex:1" onclick="nextQuiz()">下一题</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetQuiz()">重置</button>
+        </div>
+        <div class="quiz-explain" id="quizExplain"></div>
+      </div>
+      <div class="panel-section">
+        <div class="section-title">练习说明</div>
+        <p style="font-size:12px;color:var(--text2);line-height:1.7">
+          随机生成化合物3D模型，判断手性中心构型。可旋转模型、切换判断视角辅助观察。答错后显示详细解析，包含CIP排序和判断过程。
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 新手引导 -->
+<div class="guide-overlay hidden" id="guideOverlay">
+  <div class="guide-card">
+    <div class="guide-header">
+      <h3>RS构型学习工具</h3>
+      <p>315化学（农）· 手性构型专项练习</p>
+    </div>
+    <div class="guide-steps">
+      <div class="guide-step">
+        <div class="guide-num">1</div>
+        <div class="guide-text">
+          <strong>选择化合物</strong>
+          <span>左侧预设库收录20+考纲高频化合物，点击即可加载3D模型</span>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-num">2</div>
+        <div class="guide-text">
+          <strong>二维构建器</strong>
+          <span>遇到没名字的题目？用构建器还原试卷上的楔形键结构图，自动生成3D模型</span>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-num">3</div>
+        <div class="guide-text">
+          <strong>判断视角</strong>
+          <span>点"判断视角"将最小基团转到背面，直接观察1→2→3的顺/逆时针</span>
+        </div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-num">4</div>
+        <div class="guide-text">
+          <strong>对照与练习</strong>
+          <span>右侧查看Fischer/Newman投影式、CIP排序、判断步骤；切换到练习模式刷题</span>
+        </div>
+      </div>
+    </div>
+    <button class="guide-start" onclick="closeGuide()">开始使用</button>
+    <p class="guide-footer">提示：可随时点击右上角"？"重新查看引导</p>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   数据层：基团库（含完整3D结构）
+   局部坐标系：锚点原子在原点，+z为背离手性碳的基团延伸方向
+   ============================================================ */
+const GROUP_LIB = {
+  // 单原子
+  H:    {name:'H',     atom:'H',  desc:'氢', sub:[], bondLen:1.09, atoms:[]},
+  D:    {name:'D',     atom:'H',  desc:'氘', sub:[], bondLen:1.09, atoms:[]},
+  F:    {name:'F',     atom:'F',  desc:'氟', sub:[], bondLen:1.35, atoms:[]},
+  Cl:   {name:'Cl',    atom:'Cl', desc:'氯', sub:[], bondLen:1.77, atoms:[]},
+  Br:   {name:'Br',    atom:'Br', desc:'溴', sub:[], bondLen:1.94, atoms:[]},
+  I:    {name:'I',     atom:'I',  desc:'碘', sub:[], bondLen:2.14, atoms:[]},
+  // 烷基
+  CH3:  {name:'CH₃',   atom:'C', desc:'甲基', sub:[1,1,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:1.028,z:0.363},{elem:'H',x:0.890,y:-0.514,z:0.363},{elem:'H',x:-0.890,y:-0.514,z:0.363}
+  ]},
+  C2H5: {name:'C₂H₅',  atom:'C', desc:'乙基', sub:[6,1,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},{elem:'H',x:0.78,y:-0.45,z:0.3},
+    {elem:'C',x:-0.5,y:-0.6,z:1.2},
+    {elem:'H',x:-1.3,y:-0.1,z:1.4},{elem:'H',x:0,y:-1.1,z:1.6},{elem:'H',x:-0.5,y:-0.3,z:2.15}
+  ]},
+  nPr:  {name:'n-Pr',  atom:'C', desc:'正丙基', sub:[6,1,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},{elem:'H',x:0.78,y:-0.45,z:0.3},
+    {elem:'C',x:-0.5,y:-0.6,z:1.2},{elem:'H',x:-1.3,y:-0.1,z:1.4},{elem:'H',x:0,y:-1.1,z:1.5},
+    {elem:'C',x:-0.5,y:-0.3,z:2.4},{elem:'H',x:0.2,y:0.2,z:2.7},{elem:'H',x:-1.3,y:0.1,z:2.6},{elem:'H',x:-0.5,y:-0.9,z:3.0}
+  ]},
+  iPr:  {name:'i-Pr',  atom:'C', desc:'异丙基', sub:[6,6,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.95,z:0.25},
+    {elem:'C',x:0.85,y:-0.5,z:0.9},{elem:'H',x:1.5,y:0,z:1.2},{elem:'H',x:0.9,y:-1.1,z:1.2},{elem:'H',x:0.3,y:-0.3,z:1.5},
+    {elem:'C',x:-0.85,y:-0.5,z:0.9},{elem:'H',x:-1.5,y:0,z:1.2},{elem:'H',x:-0.9,y:-1.1,z:1.2},{elem:'H',x:-0.3,y:-0.3,z:1.5}
+  ]},
+  tBu:  {name:'t-Bu',  atom:'C', desc:'叔丁基', sub:[6,6,6], bondLen:1.54, atoms:[
+    {elem:'C',x:0,y:1.0,z:0.8},{elem:'H',x:0.9,y:1.3,z:1.1},{elem:'H',x:-0.9,y:1.3,z:1.1},{elem:'H',x:0,y:0.4,z:1.5},
+    {elem:'C',x:0.87,y:-0.5,z:0.8},{elem:'H',x:1.4,y:-1.1,z:1.1},{elem:'H',x:1.5,y:0.1,z:1.1},{elem:'H',x:0.5,y:-0.8,z:1.5},
+    {elem:'C',x:-0.87,y:-0.5,z:0.8},{elem:'H',x:-1.4,y:-1.1,z:1.1},{elem:'H',x:-1.5,y:0.1,z:1.1},{elem:'H',x:-0.5,y:-0.8,z:1.5}
+  ]},
+  iBu:  {name:'i-Bu',  atom:'C', desc:'异丁基', sub:[6,1,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},{elem:'H',x:0.78,y:-0.45,z:0.3},
+    {elem:'C',x:-0.5,y:-0.6,z:1.2},{elem:'H',x:-1.2,y:-0.1,z:1.4},
+    {elem:'C',x:-0.5,y:-0.9,z:2.3},
+    {elem:'C',x:0.3,y:-1.5,z:2.7},{elem:'H',x:0.9,y:-1.9,z:2.4},{elem:'H',x:0.5,y:-1.5,z:3.4},{elem:'H',x:-0.2,y:-2.1,z:2.7},
+    {elem:'C',x:-1.2,y:-1.5,z:2.7},{elem:'H',x:-1.8,y:-1.9,z:2.4},{elem:'H',x:-1.4,y:-1.5,z:3.4},{elem:'H',x:-0.7,y:-2.1,z:2.7}
+  ]},
+  sBu:  {name:'s-Bu',  atom:'C', desc:'仲丁基', sub:[6,6,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.95,z:0.25},
+    {elem:'C',x:0.85,y:-0.5,z:0.9},{elem:'H',x:1.5,y:0,z:1.2},{elem:'H',x:0.9,y:-1.1,z:1.2},{elem:'H',x:0.3,y:-0.3,z:1.5},
+    {elem:'C',x:-0.85,y:-0.5,z:0.9},{elem:'H',x:-1.4,y:0,z:1.1},
+    {elem:'C',x:-1.0,y:-1.0,z:2.1},{elem:'H',x:-1.8,y:-1.3,z:2.3},{elem:'H',x:-0.5,y:-1.7,z:2.4},{elem:'H',x:-1.2,y:-0.5,z:2.7}
+  ]},
+  // 烯基/炔基
+  Vinyl:{name:'CH=CH₂', atom:'C', desc:'乙烯基', sub:[6,6,1], bondLen:1.48, atoms:[
+    {elem:'C',x:0,y:0,z:1.34},
+    {elem:'H',x:0,y:1.08,z:1.7},{elem:'H',x:0,y:-1.08,z:1.7}
+  ]},
+  Allyl:{name:'CH₂CH=CH₂',atom:'C',desc:'烯丙基', sub:[6,1,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},{elem:'H',x:0.78,y:-0.45,z:0.3},
+    {elem:'C',x:-0.5,y:-0.6,z:1.2},{elem:'H',x:-1.2,y:-0.1,z:1.4},
+    {elem:'C',x:-0.5,y:-0.3,z:2.54},{elem:'H',x:0.2,y:0.2,z:2.9},{elem:'H',x:-1.2,y:0.1,z:2.8}
+  ]},
+  Ethynyl:{name:'C≡CH',atom:'C',desc:'乙炔基', sub:[6,6,6], bondLen:1.45, atoms:[
+    {elem:'C',x:0,y:0,z:1.2},{elem:'H',x:0,y:0,z:2.27}
+  ]},
+  // 芳基
+  Ph:   {name:'Ph',    atom:'C', desc:'苯基', sub:[6,6,1], bondLen:1.48, atoms:[
+    {elem:'C',x:1.21,y:0,z:0.7},{elem:'C',x:1.21,y:0,z:2.1},{elem:'C',x:0,y:0,z:2.8},
+    {elem:'C',x:-1.21,y:0,z:2.1},{elem:'C',x:-1.21,y:0,z:0.7},
+    {elem:'H',x:2.15,y:0,z:0.35},{elem:'H',x:2.15,y:0,z:2.45},{elem:'H',x:0,y:0,z:3.75},
+    {elem:'H',x:-2.15,y:0,z:2.45},{elem:'H',x:-2.15,y:0,z:0.35}
+  ]},
+  Bn:   {name:'CH₂Ph', atom:'C', desc:'苄基', sub:[6,1,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},{elem:'H',x:0.78,y:-0.45,z:0.3},
+    {elem:'C',x:-0.5,y:-0.6,z:1.2},
+    {elem:'C',x:0.5,y:0,z:2.2},{elem:'C',x:1.6,y:0,z:2.8},{elem:'C',x:1.6,y:0,z:4.2},
+    {elem:'C',x:0.5,y:0,z:4.8},{elem:'C',x:-0.6,y:0,z:4.2},{elem:'C',x:-0.6,y:0,z:2.8},
+    {elem:'H',x:2.45,y:0,z:2.3},{elem:'H',x:2.45,y:0,z:4.7},{elem:'H',x:0.5,y:0,z:5.7},
+    {elem:'H',x:-1.45,y:0,z:4.7},{elem:'H',x:-1.45,y:0,z:2.3}
+  ]},
+  // 含氧基团
+  OH:   {name:'OH',    atom:'O', desc:'羟基', sub:[1], bondLen:1.43, atoms:[
+    {elem:'H',x:0,y:0,z:0.96}
+  ]},
+  OCH3: {name:'OCH₃',  atom:'O', desc:'甲氧基', sub:[6], bondLen:1.36, atoms:[
+    {elem:'C',x:0,y:0,z:1.0},
+    {elem:'H',x:0,y:0.9,z:1.35},{elem:'H',x:0.78,y:-0.45,z:1.35},{elem:'H',x:-0.78,y:-0.45,z:1.35}
+  ]},
+  OC2H5:{name:'OC₂H₅', atom:'O', desc:'乙氧基', sub:[6], bondLen:1.36, atoms:[
+    {elem:'C',x:0,y:0,z:1.0},{elem:'H',x:0,y:0.85,z:1.3},{elem:'H',x:0.74,y:-0.42,z:1.3},
+    {elem:'C',x:-0.5,y:-0.55,z:1.9},{elem:'H',x:-1.2,y:-0.1,z:2.1},{elem:'H',x:0,y:-1.0,z:2.2},{elem:'H',x:-0.5,y:-0.3,z:2.8}
+  ]},
+  OPh:  {name:'OPh',   atom:'O', desc:'苯氧基', sub:[6], bondLen:1.36, atoms:[
+    {elem:'C',x:0,y:0,z:1.0},
+    {elem:'C',x:1.1,y:0,z:1.7},{elem:'C',x:1.1,y:0,z:3.1},{elem:'C',x:0,y:0,z:3.8},
+    {elem:'C',x:-1.1,y:0,z:3.1},{elem:'C',x:-1.1,y:0,z:1.7},
+    {elem:'H',x:2.0,y:0,z:1.3},{elem:'H',x:2.0,y:0,z:3.5},{elem:'H',x:0,y:0,z:4.7},
+    {elem:'H',x:-2.0,y:0,z:3.5},{elem:'H',x:-2.0,y:0,z:1.3}
+  ]},
+  OAc:  {name:'OCOCH₃',atom:'O', desc:'乙酰氧基', sub:[6], bondLen:1.36, atoms:[
+    {elem:'C',x:0,y:0,z:1.0},{elem:'O',x:0,y:1.0,z:1.4},
+    {elem:'C',x:0,y:-0.7,z:1.8},{elem:'H',x:0.8,y:-1.1,z:2.0},{elem:'H',x:-0.8,y:-1.1,z:2.0},{elem:'H',x:0,y:-0.3,z:2.6}
+  ]},
+  CHO:  {name:'CHO',   atom:'C', desc:'醛基', sub:[8,8,1], bondLen:1.50, atoms:[
+    {elem:'O',x:0,y:1.2,z:0},{elem:'H',x:0,y:-0.7,z:0.7}
+  ]},
+  COCH3:{name:'COCH₃', atom:'C', desc:'乙酰基', sub:[8,8,6], bondLen:1.50, atoms:[
+    {elem:'O',x:0,y:1.2,z:0},
+    {elem:'C',x:0,y:-0.7,z:1.0},
+    {elem:'H',x:0.85,y:-1.0,z:1.3},{elem:'H',x:-0.85,y:-1.0,z:1.3},{elem:'H',x:0,y:-0.2,z:1.7}
+  ]},
+  COOH: {name:'COOH',  atom:'C', desc:'羧基', sub:[8,8,8], bondLen:1.50, atoms:[
+    {elem:'O',x:0,y:1.2,z:0},
+    {elem:'O',x:0.9,y:-0.5,z:0.5},
+    {elem:'H',x:0.9,y:-0.5,z:1.46}
+  ]},
+  COOCH3:{name:'COOCH₃',atom:'C',desc:'甲酯基', sub:[8,8,8], bondLen:1.50, atoms:[
+    {elem:'O',x:0,y:1.2,z:0},
+    {elem:'O',x:0.9,y:-0.5,z:0.5},
+    {elem:'C',x:0.9,y:-0.5,z:1.6},
+    {elem:'H',x:1.7,y:-0.9,z:1.9},{elem:'H',x:0.1,y:-0.9,z:1.9},{elem:'H',x:0.9,y:0,z:2.3}
+  ]},
+  CONH2:{name:'CONH₂', atom:'C', desc:'酰胺基', sub:[8,8,7], bondLen:1.50, atoms:[
+    {elem:'O',x:0,y:1.2,z:0},
+    {elem:'N',x:0,y:-0.8,z:0.6},
+    {elem:'H',x:0.7,y:-1.3,z:0.9},{elem:'H',x:-0.7,y:-1.3,z:0.9}
+  ]},
+  CH2OH:{name:'CH₂OH', atom:'C', desc:'羟甲基', sub:[8,1,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},{elem:'H',x:0.78,y:-0.45,z:0.3},
+    {elem:'O',x:-0.5,y:-0.6,z:1.2},{elem:'H',x:-0.5,y:-0.6,z:2.16}
+  ]},
+  CH2NH2:{name:'CH₂NH₂',atom:'C',desc:'氨甲基', sub:[7,1,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},{elem:'H',x:0.78,y:-0.45,z:0.3},
+    {elem:'N',x:-0.5,y:-0.6,z:1.2},{elem:'H',x:-1.2,y:-0.1,z:1.5},{elem:'H',x:0,y:-1.1,z:1.5}
+  ]},
+  CN:   {name:'CN',    atom:'C', desc:'氰基', sub:[7,7,7], bondLen:1.47, atoms:[
+    {elem:'N',x:0,y:0,z:1.16}
+  ]},
+  // 含氮基团
+  NH2:  {name:'NH₂',   atom:'N', desc:'氨基', sub:[1,1], bondLen:1.47, atoms:[
+    {elem:'H',x:0,y:0.81,z:0.6},{elem:'H',x:0,y:-0.81,z:0.6}
+  ]},
+  NHCH3:{name:'NHCH₃', atom:'N', desc:'甲氨基', sub:[6,1], bondLen:1.47, atoms:[
+    {elem:'H',x:0,y:0.85,z:0.5},
+    {elem:'C',x:0,y:-0.7,z:0.9},
+    {elem:'H',x:0.8,y:-1.0,z:1.2},{elem:'H',x:-0.8,y:-1.0,z:1.2},{elem:'H',x:0,y:-0.3,z:1.6}
+  ]},
+  NMe2: {name:'N(CH₃)₂',atom:'N',desc:'二甲氨基', sub:[6,6], bondLen:1.47, atoms:[
+    {elem:'C',x:0.7,y:0.5,z:0.8},{elem:'H',x:1.4,y:0.9,z:1.1},{elem:'H',x:0.9,y:-0.1,z:1.2},{elem:'H',x:0.2,y:1.0,z:1.2},
+    {elem:'C',x:-0.7,y:-0.5,z:0.8},{elem:'H',x:-1.4,y:-0.9,z:1.1},{elem:'H',x:-0.9,y:0.1,z:1.2},{elem:'H',x:-0.2,y:-1.0,z:1.2}
+  ]},
+  NO2:  {name:'NO₂',   atom:'N', desc:'硝基', sub:[8,8,8], bondLen:1.48, atoms:[
+    {elem:'O',x:0.9,y:0.7,z:0.4},{elem:'O',x:-0.9,y:0.7,z:0.4}
+  ]},
+  NHAc: {name:'NHCOCH₃',atom:'N',desc:'乙酰氨基', sub:[6,1], bondLen:1.47, atoms:[
+    {elem:'H',x:0,y:0.85,z:0.4},
+    {elem:'C',x:0,y:-0.7,z:0.9},{elem:'O',x:0,y:0.3,z:1.8},
+    {elem:'C',x:0,y:-1.5,z:1.5},{elem:'H',x:0.8,y:-1.9,z:1.7},{elem:'H',x:-0.8,y:-1.9,z:1.7},{elem:'H',x:0,y:-1.1,z:2.2}
+  ]},
+  // 含硫
+  SH:   {name:'SH',    atom:'S', desc:'巯基', sub:[1], bondLen:1.82, atoms:[
+    {elem:'H',x:0,y:0,z:1.34}
+  ]},
+  SCH3: {name:'SCH₃',  atom:'S', desc:'甲硫基', sub:[6], bondLen:1.82, atoms:[
+    {elem:'C',x:0,y:0,z:1.2},
+    {elem:'H',x:0,y:0.9,z:1.55},{elem:'H',x:0.78,y:-0.45,z:1.55},{elem:'H',x:-0.78,y:-0.45,z:1.55}
+  ]},
+  SO3H: {name:'SO₃H',  atom:'S', desc:'磺酸基', sub:[8,8,8], bondLen:1.75, atoms:[
+    {elem:'O',x:0,y:1.2,z:0.3},{elem:'O',x:1.04,y:-0.6,z:0.3},{elem:'O',x:-1.04,y:-0.6,z:0.3},
+    {elem:'H',x:0,y:1.2,z:1.2}
+  ]},
+  // 氨基酸侧链
+  CH2SH:{name:'CH₂SH', atom:'C', desc:'巯甲基(半胱氨酸)', sub:[16,1,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},{elem:'H',x:0.78,y:-0.45,z:0.3},
+    {elem:'S',x:-0.5,y:-0.6,z:1.2},{elem:'H',x:-0.5,y:-0.6,z:2.54}
+  ]},
+  CH2COOH:{name:'CH₂COOH',atom:'C',desc:'羧甲基(天冬氨酸)',sub:[6,1,1],bondLen:1.54,atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},{elem:'H',x:0.78,y:-0.45,z:0.3},
+    {elem:'C',x:-0.5,y:-0.6,z:1.2},
+    {elem:'O',x:-0.5,y:0.5,z:1.9},{elem:'O',x:-1.2,y:-1.1,z:1.5},{elem:'H',x:-1.2,y:-1.1,z:2.3}
+  ]},
+  CH2CH2COOH:{name:'CH₂CH₂COOH',atom:'C',desc:'羧乙基(谷氨酸)',sub:[6,1,1],bondLen:1.54,atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},{elem:'H',x:0.78,y:-0.45,z:0.3},
+    {elem:'C',x:-0.5,y:-0.6,z:1.2},{elem:'H',x:-1.2,y:-0.1,z:1.4},{elem:'H',x:0,y:-1.1,z:1.5},
+    {elem:'C',x:-0.5,y:-0.3,z:2.4},
+    {elem:'O',x:-0.5,y:0.8,z:2.9},{elem:'O',x:-1.2,y:-0.8,z:2.7},{elem:'H',x:-1.2,y:-0.8,z:3.5}
+  ]},
+  CH2CONH2:{name:'CH₂CONH₂',atom:'C',desc:'酰胺甲基(天冬酰胺)',sub:[6,1,1],bondLen:1.54,atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},{elem:'H',x:0.78,y:-0.45,z:0.3},
+    {elem:'C',x:-0.5,y:-0.6,z:1.2},
+    {elem:'O',x:-0.5,y:0.5,z:1.9},
+    {elem:'N',x:-1.2,y:-1.1,z:1.5},{elem:'H',x:-1.8,y:-1.5,z:1.7},{elem:'H',x:-0.8,y:-1.7,z:1.7}
+  ]},
+  CH2CH2SCH3:{name:'CH₂CH₂SCH₃',atom:'C',desc:'甲硫乙基(甲硫氨酸)',sub:[6,1,1],bondLen:1.54,atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},{elem:'H',x:0.78,y:-0.45,z:0.3},
+    {elem:'C',x:-0.5,y:-0.6,z:1.2},{elem:'H',x:-1.2,y:-0.1,z:1.4},{elem:'H',x:0,y:-1.1,z:1.5},
+    {elem:'S',x:-0.5,y:-0.3,z:2.5},
+    {elem:'C',x:-0.5,y:0.7,z:3.5},{elem:'H',x:0.2,y:1.1,z:3.8},{elem:'H',x:-1.0,y:1.3,z:3.6},{elem:'H',x:-0.5,y:0.2,z:4.1}
+  ]},
+  CH2CH2CH2CH2NH2:{name:'(CH₂)₄NH₂',atom:'C',desc:'氨丁基(赖氨酸)',sub:[6,1,1],bondLen:1.54,atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},{elem:'H',x:0.78,y:-0.45,z:0.3},
+    {elem:'C',x:-0.5,y:-0.6,z:1.2},{elem:'H',x:-1.2,y:-0.1,z:1.4},
+    {elem:'C',x:-0.5,y:-0.3,z:2.4},{elem:'H',x:0,y:-0.8,z:2.7},
+    {elem:'C',x:-0.5,y:0,z:3.6},{elem:'H',x:-1.0,y:-0.5,z:3.9},
+    {elem:'N',x:-0.5,y:0.3,z:4.8},{elem:'H',x:0.2,y:0.8,z:5.0},{elem:'H',x:-1.0,y:0.8,z:5.0}
+  ]},
+  pOHBn:{name:'CH₂C₆H₄OH',atom:'C',desc:'对羟苄基(酪氨酸)',sub:[6,1,1],bondLen:1.54,atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},{elem:'H',x:0.78,y:-0.45,z:0.3},
+    {elem:'C',x:-0.5,y:-0.6,z:1.2},
+    {elem:'C',x:0.4,y:0,z:2.1},{elem:'C',x:1.4,y:0,z:2.7},{elem:'C',x:1.4,y:0,z:4.1},
+    {elem:'C',x:0.4,y:0,z:4.7},{elem:'C',x:-0.6,y:0,z:4.1},{elem:'C',x:-0.6,y:0,z:2.7},
+    {elem:'H',x:2.2,y:0,z:2.3},{elem:'H',x:2.2,y:0,z:4.5},
+    {elem:'O',x:0.4,y:0,z:5.7},{elem:'H',x:0.4,y:0,z:6.5},
+    {elem:'H',x:-1.4,y:0,z:4.5},{elem:'H',x:-1.4,y:0,z:2.3}
+  ]},
+  // 组合基团（双手性中心用）
+  CHOHCOOH:{name:'CH(OH)COOH',atom:'C',desc:'羟甲基羧基', sub:[8,6,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},
+    {elem:'O',x:0.78,y:-0.45,z:0.3},{elem:'H',x:0.78,y:-0.45,z:1.2},
+    {elem:'C',x:-0.7,y:-0.5,z:0.9},{elem:'O',x:-0.7,y:0.5,z:1.7},
+    {elem:'O',x:-1.4,y:-1.0,z:1.2},{elem:'H',x:-1.4,y:-1.0,z:2.0}
+  ]},
+  CHOHCH3:{name:'CH(OH)CH₃',atom:'C',desc:'1-羟乙基', sub:[8,6,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},
+    {elem:'O',x:0.78,y:-0.45,z:0.3},{elem:'H',x:0.78,y:-0.45,z:1.2},
+    {elem:'C',x:-0.7,y:-0.5,z:0.9},
+    {elem:'H',x:-1.4,y:-0.1,z:1.1},{elem:'H',x:-0.5,y:-1.1,z:1.2},{elem:'H',x:-0.9,y:-0.2,z:1.7}
+  ]},
+  CHClCH3:{name:'CH(Cl)CH₃',atom:'C',desc:'1-氯乙基', sub:[17,6,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},
+    {elem:'Cl',x:0.85,y:-0.45,z:0.3},
+    {elem:'C',x:-0.75,y:-0.5,z:0.9},
+    {elem:'H',x:-1.45,y:-0.1,z:1.1},{elem:'H',x:-0.55,y:-1.1,z:1.2},{elem:'H',x:-0.95,y:-0.2,z:1.7}
+  ]},
+  CHNH2COOH:{name:'CH(NH₂)COOH',atom:'C',desc:'氨甲基羧基', sub:[7,6,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},
+    {elem:'N',x:0.78,y:-0.45,z:0.3},{elem:'H',x:1.4,y:-0.8,z:0.5},{elem:'H',x:0.9,y:0.1,z:0.8},
+    {elem:'C',x:-0.7,y:-0.5,z:0.9},{elem:'O',x:-0.7,y:0.5,z:1.7},
+    {elem:'O',x:-1.4,y:-1.0,z:1.2},{elem:'H',x:-1.4,y:-1.0,z:2.0}
+  ]},
+  // 环状化合物用
+  CHCH3:{name:'CH(CH₃)',atom:'C',desc:'环上手性碳', sub:[6,6,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.95,z:0.25},
+    {elem:'C',x:0.85,y:-0.5,z:0.9},{elem:'H',x:1.5,y:0,z:1.2},{elem:'H',x:0.9,y:-1.1,z:1.2},{elem:'H',x:0.3,y:-0.3,z:1.5}
+  ]},
+  CH2CH2:{name:'CH₂',atom:'C',desc:'环上亚甲基', sub:[6,1,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},{elem:'H',x:0.78,y:-0.45,z:0.3},
+    {elem:'C',x:-0.5,y:-0.6,z:1.2},{elem:'H',x:-1.2,y:-0.1,z:1.4},{elem:'H',x:0,y:-1.1,z:1.5}
+  ]},
+  // 葡萄糖（开链）用
+  CHOHCHO:{name:'CH(OH)CHO',atom:'C',desc:'羟乙醛基', sub:[8,6,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},
+    {elem:'O',x:0.78,y:-0.45,z:0.3},{elem:'H',x:0.78,y:-0.45,z:1.2},
+    {elem:'C',x:-0.7,y:-0.5,z:0.9},{elem:'O',x:-0.7,y:0.5,z:1.7},{elem:'H',x:-1.4,y:-0.8,z:1.1}
+  ]},
+  CHOHCH2OH:{name:'CH(OH)CH₂OH',atom:'C',desc:'二羟乙基', sub:[8,6,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},
+    {elem:'O',x:0.78,y:-0.45,z:0.3},{elem:'H',x:0.78,y:-0.45,z:1.2},
+    {elem:'C',x:-0.7,y:-0.5,z:0.9},{elem:'H',x:-1.3,y:-0.1,z:1.1},{elem:'H',x:-0.5,y:-1.1,z:1.2},
+    {elem:'O',x:-0.9,y:-0.3,z:2.1},{elem:'H',x:-0.9,y:-0.3,z:2.9}
+  ]},
+  CHOHCHOHCH2OH:{name:'CH(OH)CH(OH)CH₂OH',atom:'C',desc:'三羟丙基', sub:[8,6,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},
+    {elem:'O',x:0.78,y:-0.45,z:0.3},{elem:'H',x:0.78,y:-0.45,z:1.2},
+    {elem:'C',x:-0.7,y:-0.5,z:0.9},{elem:'H',x:-1.3,y:-0.1,z:1.1},
+    {elem:'O',x:-0.5,y:-1.1,z:1.5},{elem:'H',x:-0.5,y:-1.1,z:2.3},
+    {elem:'C',x:-1.2,y:-0.3,z:2.0},{elem:'H',x:-1.8,y:0.1,z:2.2},
+    {elem:'O',x:-1.4,y:-0.9,z:3.0},{elem:'H',x:-1.4,y:-0.9,z:3.8}
+  ]},
+  CHOHCHOHCHO:{name:'CH(OH)CH(OH)CHO',atom:'C',desc:'二羟丙醛基', sub:[8,6,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},
+    {elem:'O',x:0.78,y:-0.45,z:0.3},{elem:'H',x:0.78,y:-0.45,z:1.2},
+    {elem:'C',x:-0.7,y:-0.5,z:0.9},{elem:'H',x:-1.3,y:-0.1,z:1.1},
+    {elem:'O',x:-0.5,y:-1.1,z:1.5},{elem:'H',x:-0.5,y:-1.1,z:2.3},
+    {elem:'C',x:-1.2,y:-0.3,z:2.0},{elem:'O',x:-1.2,y:0.7,z:2.6},{elem:'H',x:-1.9,y:-0.7,z:2.2}
+  ]},
+  CHOHCHOHCHOHCHO:{name:'CH(OH)CH(OH)CH(OH)CHO',atom:'C',desc:'三羟丁醛基', sub:[8,6,1], bondLen:1.54, atoms:[
+    {elem:'H',x:0,y:0.9,z:0.3},
+    {elem:'O',x:0.78,y:-0.45,z:0.3},{elem:'H',x:0.78,y:-0.45,z:1.2},
+    {elem:'C',x:-0.7,y:-0.5,z:0.9},{elem:'H',x:-1.3,y:-0.1,z:1.1},
+    {elem:'O',x:-0.5,y:-1.1,z:1.5},{elem:'H',x:-0.5,y:-1.1,z:2.3},
+    {elem:'C',x:-1.2,y:-0.3,z:2.0},{elem:'H',x:-1.8,y:0.1,z:2.2},
+    {elem:'O',x:-1.0,y:-0.9,z:2.6},{elem:'H',x:-1.0,y:-0.9,z:3.4},
+    {elem:'C',x:-1.7,y:-0.1,z:3.1},{elem:'O',x:-1.7,y:0.9,z:3.7},{elem:'H',x:-2.4,y:-0.5,z:3.3}
+  ]},
+  COCH2:{name:'COCH₂',atom:'C',desc:'酮亚甲基', sub:[8,6,1], bondLen:1.54, atoms:[
+    {elem:'O',x:0,y:1.0,z:0.3},
+    {elem:'C',x:0,y:-0.5,z:1.2},{elem:'H',x:0.7,y:-1.0,z:1.4},{elem:'H',x:-0.7,y:-1.0,z:1.4}
+  ]},
+};
+
+/* CIP优先级比较 —— 递归多层比较，确保科学正确 */
+function atomicNum(sym){const m={H:1,D:2,C:6,N:7,O:8,F:9,P:15,S:16,Cl:17,Br:35,I:53};return m[sym]||0}
+
+/* 每个基团的原子连接树（子基团键数组；双键/三键按CIP规则重复幻影原子） */
+const CIP_CHILDREN = {
+  H:[], D:[], F:[], Cl:[], Br:[], I:[],
+  CH3:['H','H','H'],
+  C2H5:['CH3','H','H'],
+  nPr:['C2H5','H','H'],
+  iPr:['CH3','CH3','H'],
+  tBu:['CH3','CH3','CH3'],
+  iBu:['iPr','H','H'],
+  sBu:['CH3','C2H5','H'],
+  Vinyl:['C','C','H'],
+  Allyl:['Vinyl','H','H'],
+  Ethynyl:['C','C','C'],
+  Ph:['PhC','PhC','H'],
+  PhC:['PhC','PhCH','H'],
+  PhCH:['PhC','H'],
+  Bn:['Ph','H','H'],
+  OH:['H'],
+  OCH3:['CH3'],
+  OC2H5:['C2H5'],
+  OPh:['Ph'],
+  OAc:['COCH3'],
+  CHO:['O','O','H'],
+  COCH3:['O','O','CH3'],
+  COOH:['O','O','OH'],
+  COOCH3:['O','O','OCH3'],
+  CONH2:['O','O','NH2'],
+  CH2OH:['OH','H','H'],
+  CN:['N','N','N'],
+  NH2:['H','H'],
+  NHCH3:['CH3','H'],
+  NMe2:['CH3','CH3'],
+  NO2:['O','O','O'],
+  NHAc:['COCH3','H'],
+  SH:['H'],
+  SCH3:['CH3'],
+  SO3H:['O','O','OH'],
+  CH2SH:['SH','H','H'],
+  CH2COOH:['COOH','H','H'],
+  CH2CH2COOH:['CH2COOH','H','H'],
+  CH2CONH2:['CONH2','H','H'],
+  CH2CH2SCH3:['SCH3','H','H'],
+  CH2CH2CH2CH2NH2:['CH2CH2CH2NH2','H','H'],
+  CH2CH2CH2NH2:['CH2CH2NH2','H','H'],
+  CH2CH2NH2:['CH2NH2','H','H'],
+  CH2NH2:['NH2','H','H'],
+  pOHBn:['pOHPh','H','H'],
+  pOHPh:['PhC','PhC','H'],
+  CHOHCOOH:['OH','COOH','H'],
+  CHOHCH3:['OH','CH3','H'],
+  CHClCH3:['Cl','CH3','H'],
+  CHNH2COOH:['NH2','COOH','H'],
+  CHCH3:['CH3','H','H'],
+  CH2CH2:['CH2ring','H','H'],
+  CH2ring:['H','H'],
+  CHOHCHO:['OH','CHO','H'],
+  CHOHCH2OH:['OH','CH2OH','H'],
+  CHOHCHOHCH2OH:['OH','CHOHCH2OH','H'],
+  CHOHCHOHCHO:['OH','CHOHCHO','H'],
+  CHOHCHOHCHOHCHO:['OH','CHOHCHOHCHO','H'],
+  COCH2:['O','O','CH3'],
+};
+
+/* 获取任意基团（含辅助基团）的锚点原子序数 */
+function cipAtomNum(key){
+  const g=GROUP_LIB[key];
+  if(g)return atomicNum(g.atom);
+  // 辅助基团解析：=O→O, =CH2→C, #N→N, #CH→C, PhC→C, 单字母O/C/N/H
+  if(key.startsWith('=')){
+    const s=key.slice(1);
+    return atomicNum(s[0]);
+  }
+  if(key.startsWith('#')){
+    const s=key.slice(1);
+    return atomicNum(s[0]);
+  }
+  if(key==='PhC')return 6;
+  return atomicNum(key)||6;
+}
+
+/* BFS生成基团的CIP层结构：每层是该层所有原子的原子序数（降序） */
+const cipCache={};
+function buildCipLayers(key,depth=0,visited=null){
+  if(depth>8)return [];
+  const cacheKey=key+'_'+depth;
+  if(cipCache[cacheKey])return cipCache[cacheKey];
+  if(!visited)visited=new Set();
+  if(visited.has(key))return [];
+  visited.add(key);
+  const children=CIP_CHILDREN[key]||[];
+  if(!children.length){cipCache[cacheKey]=[];return [];}
+  // 当前层：子基团锚点原子的原子序数
+  const layer=children.map(c=>cipAtomNum(c)).sort((a,b)=>b-a);
+  // 下一层：所有子基团的子基团
+  const nextLayers=[];
+  children.forEach(c=>{
+    const sub=buildCipLayers(c,depth+1,new Set(visited));
+    sub.forEach((s,i)=>{
+      if(!nextLayers[i])nextLayers[i]=[];
+      nextLayers[i].push(...s);
+    });
+  });
+  const result=[layer,...nextLayers.map(l=>l.sort((a,b)=>b-a))];
+  cipCache[cacheKey]=result;
+  return result;
+}
+
+/* 递归比较两个基团的CIP优先级 */
+function compareCIP(a,b){
+  const A=GROUP_LIB[a],B=GROUP_LIB[b];
+  if(!A||!B)return 0;
+  // 第一步：比较锚点原子
+  const an=atomicNum(A.atom),bn=atomicNum(B.atom);
+  if(an!==bn)return an-bn;
+  // 第二步：递归比较各层
+  const la=buildCipLayers(a),lb=buildCipLayers(b);
+  const maxDepth=Math.max(la.length,lb.length);
+  for(let d=0;d<maxDepth;d++){
+    const ra=la[d]||[],rb=lb[d]||[];
+    const maxLen=Math.max(ra.length,rb.length);
+    for(let i=0;i<maxLen;i++){
+      const va=ra[i]||0,vb=rb[i]||0;
+      if(va!==vb)return va-vb;
+    }
+  }
+  return 0;
+}
+
+/* ===== 预设化合物库 ===== */
+// groups顺序: [top, right, bottom, left]; wedge: up=实楔朝前, down=虚楔朝后, plain=纸面内
+const PRESETS = {
+  single1: [
+    {name:'S-乳酸',sub:'L-乳酸',groups:['COOH','H','CH3','OH'],wedge:['plain','down','plain','up']},
+    {name:'R-乳酸',sub:'D-乳酸',groups:['COOH','H','CH3','OH'],wedge:['plain','up','plain','down']},
+    {name:'S-2-氯丁烷',sub:'卤代烃',groups:['C2H5','H','CH3','Cl'],wedge:['plain','down','plain','up']},
+    {name:'R-2-丁醇',sub:'醇',groups:['C2H5','OH','CH3','H'],wedge:['plain','up','plain','down']},
+    {name:'S-2-溴丁烷',sub:'卤代烃',groups:['C2H5','H','CH3','Br'],wedge:['plain','down','plain','up']},
+    {name:'R-1-苯乙醇',sub:'芳香醇',groups:['Ph','OH','CH3','H'],wedge:['plain','up','plain','down']},
+    {name:'S-2-氨基丁烷',sub:'胺',groups:['C2H5','H','CH3','NH2'],wedge:['plain','down','plain','up']},
+    {name:'R-甘油醛',sub:'D-甘油醛',groups:['CHO','OH','CH2OH','H'],wedge:['plain','up','plain','down']},
+  ],
+  single2: [
+    {name:'S-丙氨酸',sub:'L-丙氨酸',groups:['COOH','H','CH3','NH2'],wedge:['plain','down','plain','up'],dl:'L'},
+    {name:'R-丙氨酸',sub:'D-丙氨酸',groups:['COOH','NH2','CH3','H'],wedge:['plain','up','plain','down'],dl:'D'},
+    {name:'S-丝氨酸',sub:'L-丝氨酸',groups:['COOH','H','CH2OH','NH2'],wedge:['plain','down','plain','up'],dl:'L'},
+    {name:'S-半胱氨酸',sub:'L-半胱氨酸',groups:['COOH','H','CH2SH','NH2'],wedge:['plain','down','plain','up'],dl:'L'},
+    {name:'S-苯丙氨酸',sub:'L-苯丙氨酸',groups:['COOH','H','Bn','NH2'],wedge:['plain','down','plain','up'],dl:'L'},
+    {name:'S-缬氨酸',sub:'L-缬氨酸',groups:['COOH','H','iPr','NH2'],wedge:['plain','down','plain','up'],dl:'L'},
+    {name:'S-亮氨酸',sub:'L-亮氨酸',groups:['COOH','H','iBu','NH2'],wedge:['plain','down','plain','up'],dl:'L'},
+    {name:'S-异亮氨酸',sub:'L-异亮氨酸',groups:['COOH','H','sBu','NH2'],wedge:['plain','down','plain','up'],dl:'L'},
+    {name:'S-甲硫氨酸',sub:'L-甲硫氨酸',groups:['COOH','H','CH2CH2SCH3','NH2'],wedge:['plain','down','plain','up'],dl:'L'},
+    {name:'S-天冬氨酸',sub:'L-天冬氨酸',groups:['COOH','H','CH2COOH','NH2'],wedge:['plain','down','plain','up'],dl:'L'},
+    {name:'S-谷氨酸',sub:'L-谷氨酸',groups:['COOH','H','CH2CH2COOH','NH2'],wedge:['plain','down','plain','up'],dl:'L'},
+    {name:'S-赖氨酸',sub:'L-赖氨酸',groups:['COOH','H','CH2CH2CH2CH2NH2','NH2'],wedge:['plain','down','plain','up'],dl:'L'},
+  ],
+  double: [
+    {name:'(R,R)-酒石酸',sub:'右旋',centers:[
+      {groups:['COOH','OH','CHOHCOOH','H'],wedge:['plain','up','plain','down']},
+      {groups:['COOH','OH','CHOHCOOH','H'],wedge:['plain','up','plain','down']}]},
+    {name:'(S,S)-酒石酸',sub:'左旋',centers:[
+      {groups:['COOH','H','CHOHCOOH','OH'],wedge:['plain','down','plain','up']},
+      {groups:['COOH','H','CHOHCOOH','OH'],wedge:['plain','down','plain','up']}]},
+    {name:'meso-酒石酸',sub:'内消旋(R,S)',centers:[
+      {groups:['COOH','OH','CHOHCOOH','H'],wedge:['plain','up','plain','down']},
+      {groups:['COOH','H','CHOHCOOH','OH'],wedge:['plain','down','plain','up']}]},
+    {name:'(2S,3R)-苏氨酸',sub:'L-苏氨酸',centers:[
+      {groups:['COOH','H','CHOHCH3','NH2'],wedge:['plain','down','plain','up']},
+      {groups:['CHNH2COOH','OH','CH3','H'],wedge:['plain','up','plain','down']}]},
+    {name:'(2R,3R)-2,3-二氯丁烷',sub:'邻二卤代',centers:[
+      {groups:['CHClCH3','Cl','CH3','H'],wedge:['plain','up','plain','down']},
+      {groups:['CHClCH3','Cl','CH3','H'],wedge:['plain','up','plain','down']}]},
+  ],
+  cyclic: [
+    {name:'顺-1,2-二甲基环丙烷',sub:'环状',groups:['CHCH3','H','CH2CH2','CH3'],wedge:['plain','down','plain','up']},
+    {name:'反-1,2-二甲基环丙烷',sub:'环状',groups:['CHCH3','CH3','CH2CH2','H'],wedge:['plain','up','plain','down']},
+    {name:'(R)-2-甲基环己酮',sub:'环状手性',groups:['COCH2','H','CH2CH2','CH3'],wedge:['plain','down','plain','up']},
+    {name:'D-葡萄糖(开链)',sub:'(2R,3S,4R,5R)',centers:[
+      {groups:['CHO','OH','CHOHCHOHCH2OH','H'],wedge:['plain','up','plain','down']},
+      {groups:['CHOHCHO','H','CHOHCH2OH','OH'],wedge:['plain','down','plain','up']},
+      {groups:['CHOHCHOHCHO','OH','CH2OH','H'],wedge:['plain','up','plain','down']},
+      {groups:['CHOHCHOHCHOHCHO','OH','CH2OH','H'],wedge:['plain','up','plain','down']}]},
+  ]
+};
+
+/* ===== 全局状态 ===== */
+let viewer=null, currentMol=null, currentCenterIdx=0;
+let judgeViewActive=false, autoRotate=false, displayStyle='stick';
+let showSettings={hydrogens:true,labels:true,groupNames:true,badge:true};
+let quizState={correct:0,wrong:0,answer:null,answered:false,type:'rs'};
+let currentProj='fischer';
+let builderState={numCenters:1,groups:['OH','COOH','CH3','H'],wedge:['plain','down','plain','up'],selectedIdx:-1,
+  topGroup:'COOH',bottomGroup:'COOH',
+  c1R:'OH',c1L:'H',c1RW:'up',c1LW:'down',
+  c2R:'OH',c2L:'H',c2RW:'up',c2LW:'down'};
+
+/* ===== 初始化 ===== */
+window.addEventListener('load',()=>{
+  initViewer();renderPresets();initBuilder();
+  setTimeout(()=>loadPreset('single1',0),400);
+  // 首次访问显示新手引导
+  if(!localStorage.getItem('rs_guide_shown')){
+    setTimeout(()=>document.getElementById('guideOverlay').classList.remove('hidden'),600);
+  }
+});
+function closeGuide(){
+  document.getElementById('guideOverlay').classList.add('hidden');
+  localStorage.setItem('rs_guide_shown','1');
+}
+function showGuide(){
+  document.getElementById('guideOverlay').classList.remove('hidden');
+}
+function initViewer(){viewer=$3Dmol.createViewer('viewer3d',{backgroundColor:'#0d1117'});viewer.render()}
+// 统一的3D视图resize：3Dmol resize()无参、读container.offsetWidth；防抖等待布局稳定
+let __resizeRAF=null;
+function resizeViewer(recenter){
+  if(!viewer)return;
+  const run=()=>{
+    const wrap=document.querySelector('.viewer-wrap');
+    if(!wrap)return;
+    const w=wrap.clientWidth,h=wrap.clientHeight;
+    if(w>100&&h>100){
+      try{viewer.resize()}catch(e){}
+      if(recenter){try{viewer.zoomTo()}catch(e){}}
+      viewer.render();
+    }
+  };
+  if(__resizeRAF)cancelAnimationFrame(__resizeRAF);
+  __resizeRAF=requestAnimationFrame(run);
+  if(recenter){clearTimeout(window.__rz2);window.__rz2=setTimeout(run,300);}
+}
+// 监听3D容器尺寸变化，自动resize（根本解决canvas不铺满问题）
+if(window.ResizeObserver){
+  const ro=new ResizeObserver(()=>{resizeViewer()});
+  document.addEventListener('DOMContentLoaded',()=>{
+    const wrap=document.querySelector('.viewer-wrap');
+    if(wrap)ro.observe(wrap);
+  });
+}
+// iOS地址栏收起/展开、平板旋转时自动调整3D视图
+let resizeTimer;
+window.addEventListener('resize',()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer=setTimeout(()=>resizeViewer(),150);
+});
+
+/* ===== Tab切换 ===== */
+function switchMode(mode){
+  const tabs=document.querySelectorAll('.mode-tab');
+  tabs.forEach(t=>t.classList.remove('active'));
+  tabs.forEach(t=>{if(t.getAttribute('onclick').indexOf("'"+mode+"'")>=0)t.classList.add('active');});
+  const lc=document.getElementById('learnContent');
+  const qc=document.getElementById('quizContent');
+  if(lc)lc.style.display=mode==='learn'?'block':'none';
+  if(qc)qc.style.display=mode==='quiz'?'block':'none';
+  const main=document.querySelector('.main');
+  const panel=document.querySelector('.panel-left');
+  const btn=document.getElementById('toggleLeft');
+  if(mode==='quiz'){
+    main.classList.add('quiz-mode');
+    panel.classList.add('collapsed');panel.classList.remove('show');
+    if(btn){btn.classList.add('collapsed');btn.textContent='▶';btn.title='展开左侧栏';}
+    // 练习模式隐藏答案overlay
+    document.getElementById('viewerOverlay').style.display='none';
+  }else{
+    main.classList.remove('quiz-mode');
+    panel.classList.remove('collapsed');panel.classList.remove('show');
+    panel.style.display='';
+    if(btn){btn.classList.remove('collapsed');btn.textContent='◀';btn.title='收起左侧栏';}
+    if(currentMol)document.getElementById('viewerOverlay').style.display='flex';
+  }
+  if(viewer){
+    requestAnimationFrame(()=>resizeViewer(true));
+    setTimeout(()=>resizeViewer(true),200);
+    setTimeout(()=>resizeViewer(true),500);
+  }
+  if(mode==='quiz')setTimeout(()=>nextQuiz(),100);
+}
+function switchInput(input){
+  document.querySelectorAll('.input-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector(`.input-tab[onclick*="'${input}'"]`).classList.add('active');
+  ['preset','builder','smiles'].forEach(k=>{
+    document.getElementById('input-'+k).style.display=k===input?'block':'none';
+  });
+}
+function switchProj(proj,el){
+  currentProj=proj;
+  document.querySelectorAll('.proj-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  if(currentMol)drawProjection();
+}
+
+/* ===== 向量工具 ===== */
+function normalize(v){const l=Math.hypot(v[0],v[1],v[2])||1;return[v[0]/l,v[1]/l,v[2]/l]}
+function rotatePoint(v,axis,angle){
+  const cos=Math.cos(angle),sin=Math.sin(angle);
+  const dot=axis[0]*v[0]+axis[1]*v[1]+axis[2]*v[2];
+  const cr=[axis[1]*v[2]-axis[2]*v[1],axis[2]*v[0]-axis[0]*v[2],axis[0]*v[1]-axis[1]*v[0]];
+  return[v[0]*cos+cr[0]*sin+axis[0]*dot*(1-cos),v[1]*cos+cr[1]*sin+axis[1]*dot*(1-cos),v[2]*cos+cr[2]*sin+axis[2]*dot*(1-cos)];
+}
+function alignToZ(dir){
+  // 将+z轴旋转到dir方向，返回旋转函数
+  const z=[0,0,1];
+  let axis=[z[1]*dir[2]-z[2]*dir[1],z[2]*dir[0]-z[0]*dir[2],z[0]*dir[1]-z[1]*dir[0]];
+  const al=Math.hypot(axis[0],axis[1],axis[2]);
+  if(al<1e-6)return v=>v;
+  axis=[axis[0]/al,axis[1]/al,axis[2]/al];
+  const angle=Math.acos(Math.max(-1,Math.min(1,dir[2])));
+  return v=>rotatePoint(v,axis,angle);
+}
+
+/* ===== 四面体坐标 ===== */
+function getTetraCoords(center){
+  // 真正的四面体基础坐标（非共面，避免旋转后三点共线）
+  // 上下基团略朝后，左右基团略朝前，模拟楔形键图的透视
+  const base=[[0,1.25,-0.45],[1.15,0,0.35],[0,-1.25,-0.45],[-1.15,0,0.35]];
+  return center.wedge.map((w,i)=>{
+    let[x,y,z]=base[i];
+    if(w==='up')z+=0.85;else if(w==='down')z-=0.85;
+    return[x,y,z];
+  });
+}
+function getDisplayCoords(center){
+  let coords=getTetraCoords(center);
+  if(judgeViewActive){
+    const lowestIdx=center.cipOrder[3];
+    const n=normalize(coords[lowestIdx]);
+    const target=[0,0,-1];
+    let axis=[n[1]*target[2]-n[2]*target[1],n[2]*target[0]-n[0]*target[2],n[0]*target[1]-n[1]*target[0]];
+    const al=Math.hypot(axis[0],axis[1],axis[2]);
+    if(al>1e-6){
+      axis=[axis[0]/al,axis[1]/al,axis[2]/al];
+      const angle=Math.acos(Math.max(-1,Math.min(1,n[0]*target[0]+n[1]*target[1]+n[2]*target[2])));
+      coords=coords.map(v=>rotatePoint(v,axis,angle));
+    }
+  }
+  return coords;
+}
+
+/* ===== R/S计算 ===== */
+function calcRS(center){
+  const coords=getTetraCoords(center);
+  const ordered=center.cipOrder.map(i=>coords[i]);
+  const v4=ordered[3],n=normalize(v4),target=[0,0,-1];
+  let axis=[n[1]*target[2]-n[2]*target[1],n[2]*target[0]-n[0]*target[2],n[0]*target[1]-n[1]*target[0]];
+  const al=Math.hypot(axis[0],axis[1],axis[2]);
+  const angle=Math.acos(Math.max(-1,Math.min(1,n[0]*target[0]+n[1]*target[1]+n[2]*target[2])));
+  let r1,r2,r3;
+  if(al<1e-6){r1=ordered[0];r2=ordered[1];r3=ordered[2];}
+  else{
+    axis=[axis[0]/al,axis[1]/al,axis[2]/al];
+    const rot=v=>rotatePoint(v,axis,angle);
+    r1=rot(ordered[0]);r2=rot(ordered[1]);r3=rot(ordered[2]);
+  }
+  const cross2d=(r2[0]-r1[0])*(r3[1]-r1[1])-(r2[1]-r1[1])*(r3[0]-r1[0]);
+  return cross2d>0?'S':'R';
+}
+
+/* ===== 预设渲染 ===== */
+function renderPresets(){
+  const render=(list,elId)=>{
+    document.getElementById(elId).innerHTML=list.map((p,i)=>
+      `<button class="preset-item" onclick="loadPreset('${elId.split('-')[1]}',${i})">${p.name}<span class="sub">${p.sub||''}</span></button>`
+    ).join('');
+  };
+  render(PRESETS.single1,'preset-single1');
+  render(PRESETS.single2,'preset-single2');
+  render(PRESETS.double,'preset-double');
+  render(PRESETS.cyclic,'preset-cyclic');
+}
+function loadPreset(cat,idx){
+  const p=PRESETS[cat][idx];
+  const mol={name:p.name,note:p.sub||'',dl:p.dl||'',centers:[]};
+  if(p.centers)mol.centers=p.centers.map(c=>({groups:c.groups.slice(),wedge:c.wedge.slice()}));
+  else mol.centers=[{groups:p.groups.slice(),wedge:p.wedge.slice()}];
+  loadMolecule(mol);
+}
+
+/* ===== 基团构建器 ===== */
+function initBuilder(){
+  renderBuilderControls();drawBuilderCanvas();
+  document.getElementById('builderCanvas').onclick=e=>{
+    if(builderState.numCenters!==1)return;
+    const r=e.target.getBoundingClientRect();
+    const x=e.clientX-r.left,y=e.clientY-r.top,cx=140,cy=120,radius=75;
+    const pos=[{x:cx,y:cy-radius},{x:cx+radius,y:cy},{x:cx,y:cy+radius},{x:cx-radius,y:cy}];
+    let best=-1,min=45;
+    pos.forEach((p,i)=>{const d=Math.hypot(x-p.x,y-p.y);if(d<min){min=d;best=i;}});
+    if(best>=0){builderState.selectedIdx=best;drawBuilderCanvas();}
+  };
+}
+function setBuilderCenters(n,el){
+  builderState.numCenters=n;
+  document.querySelectorAll('.center-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderBuilderControls();drawBuilderCanvas();
+}
+function groupOptions(selected){
+  return Object.keys(GROUP_LIB).map(k=>`<option value="${k}"${k===selected?' selected':''}>${GROUP_LIB[k].name} ${GROUP_LIB[k].desc}</option>`).join('');
+}
+function wedgeOptions(selected){
+  return `<option value="plain"${selected==='plain'?' selected':''}>纸面</option>
+    <option value="up"${selected==='up'?' selected':''}>实楔朝前</option>
+    <option value="down"${selected==='down'?' selected':''}>虚楔朝后</option>`;
+}
+function renderBuilderControls(){
+  const c=document.getElementById('builderControls');
+  if(builderState.numCenters===1){
+    const names=['上','右','下','左'];
+    c.innerHTML=builderState.groups.map((g,i)=>
+      `<div class="builder-row">
+        <label>${names[i]}</label>
+        <select onchange="builderState.groups[${i}]=this.value;drawBuilderCanvas()">${groupOptions(g)}</select>
+        <select class="wedge-select" onchange="builderState.wedge[${i}]=this.value;drawBuilderCanvas()">${wedgeOptions(builderState.wedge[i])}</select>
+      </div>`
+    ).join('');
+  }else{
+    // 双手性中心：顶部端基、C1左右、C2左右、底部端基
+    c.innerHTML=`
+      <div class="builder-row"><label>上端基</label><select onchange="builderState.topGroup=this.value;drawBuilderCanvas()">${groupOptions(builderState.topGroup)}</select><span class="wedge-select" style="visibility:hidden">—</span></div>
+      <div class="builder-subtitle">C1（上手性碳）</div>
+      <div class="builder-row"><label>右</label><select onchange="builderState.c1R=this.value;drawBuilderCanvas()">${groupOptions(builderState.c1R)}</select><select class="wedge-select" onchange="builderState.c1RW=this.value;drawBuilderCanvas()">${wedgeOptions(builderState.c1RW)}</select></div>
+      <div class="builder-row"><label>左</label><select onchange="builderState.c1L=this.value;drawBuilderCanvas()">${groupOptions(builderState.c1L)}</select><select class="wedge-select" onchange="builderState.c1LW=this.value;drawBuilderCanvas()">${wedgeOptions(builderState.c1LW)}</select></div>
+      <div class="builder-subtitle">C2（下手性碳）</div>
+      <div class="builder-row"><label>右</label><select onchange="builderState.c2R=this.value;drawBuilderCanvas()">${groupOptions(builderState.c2R)}</select><select class="wedge-select" onchange="builderState.c2RW=this.value;drawBuilderCanvas()">${wedgeOptions(builderState.c2RW)}</select></div>
+      <div class="builder-row"><label>左</label><select onchange="builderState.c2L=this.value;drawBuilderCanvas()">${groupOptions(builderState.c2L)}</select><select class="wedge-select" onchange="builderState.c2LW=this.value;drawBuilderCanvas()">${wedgeOptions(builderState.c2LW)}</select></div>
+      <div class="builder-row"><label>下端基</label><select onchange="builderState.bottomGroup=this.value;drawBuilderCanvas()">${groupOptions(builderState.bottomGroup)}</select><span class="wedge-select" style="visibility:hidden">—</span></div>
+    `;
+  }
+}
+function drawWedge(ctx,cx,cy,px,py,type){
+  if(type==='plain'){
+    ctx.strokeStyle='#c9d1d9';ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(px,py);ctx.stroke();
+  }else if(type==='up'){
+    const ang=Math.atan2(py-cy,px-cx);
+    ctx.fillStyle='#c9d1d9';ctx.beginPath();
+    ctx.moveTo(cx-Math.sin(ang)*4,cy+Math.cos(ang)*4);
+    ctx.lineTo(cx+Math.sin(ang)*4,cy-Math.cos(ang)*4);
+    ctx.lineTo(px,py);ctx.closePath();ctx.fill();
+  }else{
+    const ang=Math.atan2(py-cy,px-cx),steps=7;
+    ctx.strokeStyle='#c9d1d9';
+    for(let s=0;s<steps;s++){
+      const t=s/steps,hw=(t*0.35+0.06)*9;
+      const x1=cx+(px-cx)*t-Math.sin(ang)*hw,y1=cy+(py-cy)*t+Math.cos(ang)*hw;
+      const x2=cx+(px-cx)*t+Math.sin(ang)*hw,y2=cy+(py-cy)*t-Math.cos(ang)*hw;
+      ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    }
+  }
+}
+function drawBuilderCanvas(){
+  const cv=document.getElementById('builderCanvas'),ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,280,240);
+  const colors=['#fbbf24','#a78bfa','#34d399','#9ca3af'];
+  if(builderState.numCenters===1){
+    const cx=140,cy=120,r=72;
+    const pos=[{x:cx,y:cy-r},{x:cx+r,y:cy},{x:cx,y:cy+r},{x:cx-r,y:cy}];
+    pos.forEach((p,i)=>drawWedge(ctx,cx,cy,p.x,p.y,builderState.wedge[i]));
+    ctx.fillStyle='#fbbf24';ctx.beginPath();ctx.arc(cx,cy,11,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#0d1117';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('C*',cx,cy);
+    pos.forEach((p,i)=>{
+      const g=GROUP_LIB[builderState.groups[i]];
+      const sel=builderState.selectedIdx===i;
+      let ox=0,oy=0;
+      if(i===0)oy=-18;if(i===2)oy=20;if(i===1)ox=26;if(i===3)ox=-26;
+      if(sel){ctx.strokeStyle='#00d4aa';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x+ox,p.y+oy,18,0,Math.PI*2);ctx.stroke();}
+      ctx.fillStyle=sel?'#00d4aa':'#e6edf3';ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(g.name,p.x+ox,p.y+oy);
+    });
+  }else{
+    // 双手性中心：垂直碳链
+    const cx=140,c1y=65,c2y=175,r=55;
+    // 碳链竖线
+    ctx.strokeStyle='#8b949e';ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.moveTo(cx,20);ctx.lineTo(cx,220);ctx.stroke();
+    // 上端基
+    ctx.fillStyle='#e6edf3';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(GROUP_LIB[builderState.topGroup].name,cx,12);
+    // C1
+    drawWedge(ctx,cx,c1y,cx+r,c1y,builderState.c1RW);
+    drawWedge(ctx,cx,c1y,cx-r,c1y,builderState.c1LW);
+    ctx.fillStyle='#fbbf24';ctx.beginPath();ctx.arc(cx,c1y,10,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#0d1117';ctx.font='bold 10px sans-serif';ctx.fillText('C1',cx,c1y);
+    ctx.fillStyle='#e6edf3';ctx.font='bold 12px sans-serif';
+    ctx.fillText(GROUP_LIB[builderState.c1R].name,cx+r+20,c1y);
+    ctx.fillText(GROUP_LIB[builderState.c1L].name,cx-r-20,c1y);
+    // C2
+    drawWedge(ctx,cx,c2y,cx+r,c2y,builderState.c2RW);
+    drawWedge(ctx,cx,c2y,cx-r,c2y,builderState.c2LW);
+    ctx.fillStyle='#fbbf24';ctx.beginPath();ctx.arc(cx,c2y,10,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#0d1117';ctx.font='bold 10px sans-serif';ctx.fillText('C2',cx,c2y);
+    ctx.fillStyle='#e6edf3';ctx.font='bold 12px sans-serif';
+    ctx.fillText(GROUP_LIB[builderState.c2R].name,cx+r+20,c2y);
+    ctx.fillText(GROUP_LIB[builderState.c2L].name,cx-r-20,c2y);
+    // 下端基
+    ctx.fillText(GROUP_LIB[builderState.bottomGroup].name,cx,230);
+  }
+}
+function applyBuilder(){
+  if(builderState.numCenters===1){
+    loadMolecule({name:'自定义分子',note:'二维构建器生成',centers:[{groups:builderState.groups.slice(),wedge:builderState.wedge.slice()}]});
+  }else{
+    // 双手性中心：动态生成连接基团
+    const frag1='_frag_'+builderState.c1R+'_'+builderState.c1L;
+    const frag2='_frag_'+builderState.c2R+'_'+builderState.c2L;
+    // 注册临时基团（表示另一个手性碳及其取代基）
+    if(!GROUP_LIB[frag2]){
+      GROUP_LIB[frag2]={name:'CH('+GROUP_LIB[builderState.c2R].name+')('+GROUP_LIB[builderState.c2L].name+')',atom:'C',desc:'C2片段',sub:[6,1,1],bondLen:1.54,atoms:[]};
+      CIP_CHILDREN[frag2]=[builderState.c2R,builderState.c2L,'H'];
+    }
+    if(!GROUP_LIB[frag1]){
+      GROUP_LIB[frag1]={name:'CH('+GROUP_LIB[builderState.c1R].name+')('+GROUP_LIB[builderState.c1L].name+')',atom:'C',desc:'C1片段',sub:[6,1,1],bondLen:1.54,atoms:[]};
+      CIP_CHILDREN[frag1]=[builderState.c1R,builderState.c1L,'H'];
+    }
+    loadMolecule({name:'自定义双手性分子',note:'二维构建器生成',centers:[
+      {groups:[builderState.topGroup,builderState.c1R,frag2,builderState.c1L],wedge:['plain',builderState.c1RW,'plain',builderState.c1LW]},
+      {groups:[frag1,builderState.c2R,builderState.bottomGroup,builderState.c2L],wedge:['plain',builderState.c2RW,'plain',builderState.c2LW]}
+    ]});
+  }
+}
+function swapEnantiomer(){
+  if(builderState.numCenters===1){
+    builderState.wedge=builderState.wedge.map(w=>w==='up'?'down':w==='down'?'up':w);
+  }else{
+    builderState.c1RW=builderState.c1RW==='up'?'down':builderState.c1RW==='down'?'up':'plain';
+    builderState.c1LW=builderState.c1LW==='up'?'down':builderState.c1LW==='down'?'up':'plain';
+    builderState.c2RW=builderState.c2RW==='up'?'down':builderState.c2RW==='down'?'up':'plain';
+    builderState.c2LW=builderState.c2LW==='up'?'down':builderState.c2LW==='down'?'up':'plain';
+  }
+  renderBuilderControls();drawBuilderCanvas();showToast('已切换为对映异构体');
+}
+function resetBuilder(){
+  builderState={numCenters:1,groups:['OH','COOH','CH3','H'],wedge:['plain','down','plain','up'],selectedIdx:-1,
+    topGroup:'COOH',bottomGroup:'COOH',
+    c1R:'OH',c1L:'H',c1RW:'up',c1LW:'down',
+    c2R:'OH',c2L:'H',c2RW:'up',c2LW:'down'};
+  document.querySelectorAll('.center-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  renderBuilderControls();drawBuilderCanvas();
+}
+function randomBuilder(){
+  const pool=['OH','COOH','CH3','H','NH2','Cl','Br','C2H5','Ph','CHO','CH2OH','SH','OCH3','NO2','CN','iPr','tBu'];
+  if(builderState.numCenters===1){
+    builderState.groups=pool.slice().sort(()=>Math.random()-0.5).slice(0,4);
+    const patterns=[['plain','down','plain','up'],['plain','up','plain','down'],['up','plain','down','plain'],['down','plain','up','plain']];
+    builderState.wedge=patterns[Math.floor(Math.random()*patterns.length)];
+  }else{
+    const pick=()=>pool[Math.floor(Math.random()*pool.length)];
+    builderState.topGroup=pick();builderState.bottomGroup=pick();
+    builderState.c1R=pick();builderState.c1L=pick();
+    builderState.c2R=pick();builderState.c2L=pick();
+    const w=['up','down'];
+    builderState.c1RW=w[Math.floor(Math.random()*2)];builderState.c1LW=w[Math.floor(Math.random()*2)];
+    builderState.c2RW=w[Math.floor(Math.random()*2)];builderState.c2LW=w[Math.floor(Math.random()*2)];
+  }
+  renderBuilderControls();drawBuilderCanvas();
+  showToast('已随机生成分子结构');
+}
+
+/* ===== SMILES（简化解析） ===== */
+function applySmiles(){
+  const smi=document.getElementById('smilesInput').value.trim();
+  if(!smi){showToast('请输入SMILES');return;}
+  showLoading(true);
+  setTimeout(()=>{
+    try{
+      const mol=parseSmiles(smi);
+      if(mol)loadMolecule(mol);else showToast('无法解析，请检查格式');
+    }catch(e){showToast('解析失败: '+e.message);}
+    showLoading(false);
+  },300);
+}
+function parseSmiles(smi){
+  // 匹配手性碳模式：前面的基团[C@H或C@@H](括号内基团)后面的基团
+  const m=smi.match(/^(.+?)\[(C@@?H)\](?:\((.+?)\))?(.+)$/);
+  if(!m)return null;
+  const [,before,chiral,paren,after]=m;
+  const isR=chiral==='C@@H';
+  // SMILES片段到基团键的映射（常见考纲基团）
+  const map={
+    'C':'CH3','O':'OH','N':'NH2','Cl':'Cl','Br':'Br','F':'F','I':'I','S':'SH',
+    'C(=O)O':'COOH','C(=O)N':'CONH2','C(=O)C':'COCH3','C(=O)OC':'COOCH3',
+    'CC':'C2H5','CCC':'nPr','C(C)C':'iPr','C(C)(C)C':'tBu',
+    'c1ccccc1':'Ph','Cc1ccccc1':'Bn','CO':'CH2OH','CN':'CH2NH2',
+    'OC':'OCH3','NC':'NHCH3','NO2':'NO2','C#N':'CN','C=C':'Vinyl',
+    'C#C':'Ethynyl','SC':'SCH3','OC(=O)C':'OAc'
+  };
+  const toGroup=(s)=>{
+    if(!s)return 'H';
+    if(map[s])return map[s];
+    // 尝试匹配羧基等复杂模式
+    if(s.startsWith('C(=O)O'))return 'COOH';
+    if(s.startsWith('C(=O)N'))return 'CONH2';
+    if(s.startsWith('c1ccccc1'))return 'Ph';
+    if(s==='H')return 'H';
+    return null;
+  };
+  const gBefore=toGroup(before),gParen=paren?toGroup(paren):'H',gAfter=toGroup(after);
+  if(!gBefore||!gAfter){showToast('含未识别基团，请用二维构建器');return null;}
+  // 四个基团：before, paren(或H), after, H
+  const groups=[gBefore,gParen,gAfter,'H'];
+  return{name:'SMILES: '+smi.slice(0,20),note:'简化解析',centers:[{groups,wedge:isR?['plain','up','plain','down']:['plain','down','plain','up']}]};
+}
+
+/* ===== 核心：加载分子 ===== */
+function loadMolecule(mol){
+  currentMol=mol;currentCenterIdx=0;judgeViewActive=false;
+  document.getElementById('btnJudgeView').classList.remove('active');
+  mol.centers.forEach(c=>{
+    const idx=[0,1,2,3];
+    idx.sort((a,b)=>compareCIP(c.groups[b],c.groups[a]));
+    c.cipOrder=idx;c.rs=calcRS(c);
+  });
+  renderMolecule();updateInfoPanel();
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('viewerOverlay').style.display='flex';
+  document.getElementById('viewerBottom').style.display='flex';
+}
+
+/* ===== 3D渲染（完整基团结构） ===== */
+function buildFullAtoms(center){
+  const atoms=[{elem:'C',x:0,y:0,z:0,chiral:true}];
+  const coords=getDisplayCoords(center);
+  center.groups.forEach((gkey,i)=>{
+    const g=GROUP_LIB[gkey];
+    const dir=normalize(coords[i]);
+    const anchor=coords[i];
+    const anchorIdx=atoms.length;
+    atoms.push({elem:g.atom,x:anchor[0],y:anchor[1],z:anchor[2]});
+    if(g.atoms&&g.atoms.length){
+      const align=alignToZ(dir);
+      g.atoms.forEach(a=>{
+        const r=align([a.x,a.y,a.z]);
+        atoms.push({elem:a.elem,x:anchor[0]+r[0],y:anchor[1]+r[1],z:anchor[2]+r[2]});
+      });
+    }
+  });
+  return atoms;
+}
+function renderMolecule(){
+  if(!viewer||!currentMol)return;
+  viewer.clear();
+  const center=currentMol.centers[currentCenterIdx];
+  const atoms=buildFullAtoms(center);
+  let xyz=atoms.length+'\n\n';
+  atoms.forEach(a=>{xyz+=`${a.elem} ${a.x.toFixed(3)} ${a.y.toFixed(3)} ${a.z.toFixed(3)}\n`;});
+  viewer.addModel(xyz,'xyz');
+  if(displayStyle==='stick')viewer.setStyle({},{stick:{radius:0.16,colorscheme:'default'}});
+  else if(displayStyle==='ball')viewer.setStyle({},{stick:{radius:0.13},sphere:{scale:0.26}});
+  else viewer.setStyle({},{sphere:{scale:0.65}});
+  // 手性碳高亮
+  viewer.setStyle({atom:0},{stick:{radius:0.16},sphere:{scale:0.35,color:'#fbbf24'}});
+  // 氢原子显示控制
+  if(!showSettings.hydrogens)viewer.setStyle({elem:'H'},{stick:{hidden:true},sphere:{hidden:true}});
+  viewer.zoomTo();viewer.render();
+  // 确保canvas铺满容器
+  requestAnimationFrame(resizeViewer);
+  if(showSettings.labels)addPriorityLabels(center);
+  if(showSettings.badge)updateRSBadge(center);
+  updateChiralTabs();
+}
+function addPriorityLabels(center){
+  const coords=getDisplayCoords(center);
+  const order=center.cipOrder;
+  const colors=['#fbbf24','#a78bfa','#34d399','#9ca3af'];
+  order.forEach((gi,rank)=>{
+    const c=coords[gi],g=GROUP_LIB[center.groups[gi]];
+    viewer.addLabel(`${rank+1}`,{position:{x:c[0]*1.5,y:c[1]*1.5,z:c[2]*1.5},backgroundColor:colors[rank],backgroundOpacity:0.92,fontColor:'#0d1117',fontSize:15,fontWeight:'bold',borderRadius:9,padding:3});
+    if(showSettings.groupNames){
+      viewer.addLabel(g.name,{position:{x:c[0]*1.85,y:c[1]*1.85,z:c[2]*1.85},backgroundColor:'rgba(13,17,23,0.85)',backgroundOpacity:0.85,fontColor:'#e6edf3',fontSize:12,borderRadius:4});
+    }
+  });
+}
+function updateRSBadge(center){
+  const b=document.getElementById('rsBadge');
+  b.textContent=center.rs;b.className='rs-badge '+center.rs.toLowerCase();
+  const dl=document.getElementById('dlTag');
+  dl.textContent=currentMol.dl?currentMol.dl+'型':'';
+}
+function updateChiralTabs(){
+  const tabs=document.getElementById('chiralTabs');
+  if(currentMol.centers.length<=1){tabs.style.display='none';return;}
+  tabs.style.display='flex';
+  tabs.innerHTML=currentMol.centers.map((c,i)=>
+    `<button class="chiral-tab ${i===currentCenterIdx?'active':''}" onclick="switchCenter(${i})">C${i+1}(${c.rs})</button>`).join('');
+}
+function switchCenter(idx){
+  currentCenterIdx=idx;judgeViewActive=false;
+  document.getElementById('btnJudgeView').classList.remove('active');
+  renderMolecule();updateInfoPanel();
+}
+
+/* ===== 视图控制 ===== */
+function toggleJudgeView(){
+  judgeViewActive=!judgeViewActive;
+  document.getElementById('btnJudgeView').classList.toggle('active',judgeViewActive);
+  renderMolecule();
+  if(judgeViewActive)showToast('判断视角：最小基团已转到背面');
+}
+function resetView(){
+  judgeViewActive=false;document.getElementById('btnJudgeView').classList.remove('active');
+  renderMolecule();
+}
+function toggleRotate(){
+  autoRotate=!autoRotate;
+  if(autoRotate)viewer.spin('y',0.8);else viewer.spin(false);
+}
+function toggleModelVisible(){
+  const v=document.getElementById('viewer3d');
+  const btn=document.getElementById('btnHideModel');
+  const hidden=v.style.opacity==='0';
+  v.style.opacity=hidden?'1':'0';
+  v.style.transition='opacity .2s';
+  btn.textContent=hidden?'隐藏模型':'显示模型';
+  if(hidden){
+    const msg=document.getElementById('modelHiddenMsg');
+    if(msg)msg.remove();
+  }else{
+    const wrap=document.querySelector('.viewer-wrap');
+    const msg=document.createElement('div');
+    msg.id='modelHiddenMsg';
+    msg.className='viewer-hidden-msg';
+    msg.innerHTML='<span>🧊</span>模型已隐藏<br>靠空间想象答题吧';
+    wrap.appendChild(msg);
+  }
+}
+function toggleLeftPanel(){
+  const panel=document.querySelector('.panel-left');
+  const btn=document.getElementById('toggleLeft');
+  const isQuiz=document.querySelector('.main').classList.contains('quiz-mode');
+  let collapsed;
+  if(isQuiz){
+    // 练习模式：collapsed为默认收起，show为临时展开
+    const showing=panel.classList.contains('show');
+    if(showing){panel.classList.remove('show');panel.classList.add('collapsed');btn.classList.add('collapsed');collapsed=true;}
+    else{panel.classList.add('show');panel.classList.remove('collapsed');btn.classList.remove('collapsed');collapsed=false;}
+  }else{
+    collapsed=panel.classList.toggle('collapsed');
+    btn.classList.toggle('collapsed',collapsed);
+  }
+  btn.textContent=collapsed?'▶':'◀';
+  btn.title=collapsed?'展开左侧栏':'收起左侧栏';
+  requestAnimationFrame(resizeViewer);
+  setTimeout(resizeViewer,300);
+}
+
+/* ===== 显示设置 ===== */
+function toggleDisp(el){
+  el.classList.toggle('on');
+  const id=el.id;
+  if(id==='tgHydrogens')showSettings.hydrogens=el.classList.contains('on');
+  if(id==='tgLabels')showSettings.labels=el.classList.contains('on');
+  if(id==='tgGroupNames')showSettings.groupNames=el.classList.contains('on');
+  if(id==='tgBadge')showSettings.badge=el.classList.contains('on');
+  if(currentMol)renderMolecule();
+}
+function setStyle(s,el){
+  displayStyle=s;
+  document.querySelectorAll('.style-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  if(currentMol)renderMolecule();
+}
+
+/* ===== 右侧信息面板 ===== */
+function updateInfoPanel(){
+  if(!currentMol)return;
+  const center=currentMol.centers[currentCenterIdx];
+  document.getElementById('resultSection').style.display='block';
+  const rv=document.getElementById('resultValue');
+  rv.textContent=center.rs+' 构型';rv.className='result-value '+center.rs.toLowerCase();
+  let sub=currentMol.name;
+  if(currentMol.centers.length>1)sub+=' · '+currentMol.centers.map((c,i)=>`C${i+1}=${c.rs}`).join(', ');
+  if(currentMol.dl)sub+=' · '+currentMol.dl+'型';
+  document.getElementById('resultSub').textContent=sub;
+
+  document.getElementById('cipSection').style.display='block';
+  document.getElementById('cipList').innerHTML=center.cipOrder.map((gi,rank)=>{
+    const g=GROUP_LIB[center.groups[gi]];
+    return `<div class="cip-item"><div class="cip-num n${rank+1}">${rank+1}</div><div class="cip-group">${g.name}</div><div class="cip-atom">${g.atom} Z=${atomicNum(g.atom)}</div></div>`;
+  }).join('');
+
+  document.getElementById('judgeSection').style.display='block';
+  const g0=GROUP_LIB[center.groups[center.cipOrder[0]]],g1=GROUP_LIB[center.groups[center.cipOrder[1]]],g2=GROUP_LIB[center.groups[center.cipOrder[2]]],g3=GROUP_LIB[center.groups[center.cipOrder[3]]];
+  const cls=center.rs==='R'?'r-text':'s-text',dir=center.rs==='R'?'顺时针':'逆时针';
+  document.getElementById('judgeSteps').innerHTML=`
+    <div class="step" data-n="1">按CIP规则排序：<span class="highlight">${g0.name} > ${g1.name} > ${g2.name} > ${g3.name}</span></div>
+    <div class="step" data-n="2">将最小基团 <span class="highlight">${g3.name}</span> 置于视线远端</div>
+    <div class="step" data-n="3">观察 <span class="highlight">${g0.name} → ${g1.name} → ${g2.name}</span> 的方向</div>
+    <div class="step" data-n="4">方向为<span class="${cls}">${dir}</span>，故为 <span class="${cls}">${center.rs} 构型</span></div>`;
+
+  document.getElementById('projSection').style.display='block';
+  drawProjection();
+}
+
+/* ===== 投影式绘制 ===== */
+function drawProjection(){
+  if(currentProj==='fischer')drawFischer();
+  else drawNewman();
+}
+function drawFischer(){
+  const svg=document.getElementById('projSvg');
+  const centers=currentMol.centers;
+  const n=centers.length;
+  const cx=130;
+  const unitH= n>1 ? 55 : 52;
+  const totalH = n>1 ? (n-1)*unitH + 80 : 260;
+  const startY = n>1 ? 50 : 105;
+  svg.setAttribute('height', Math.max(totalH, 180));
+
+  let h='';
+  const rc=['#fbbf24','#a78bfa','#34d399','#9ca3af'];
+
+  if(n===1){
+    // 单手性中心：标准十字
+    const cy=startY, len=58;
+    const pm=[{x:cx,y:cy-len},{x:cx+len,y:cy},{x:cx,y:cy+len},{x:cx-len,y:cy}];
+    h+=`<line x1="${cx}" y1="${cy-len-10}" x2="${cx}" y2="${cy+len+10}" stroke="#8b949e" stroke-width="2"/>`;
+    h+=`<line x1="${cx-len-10}" y1="${cy}" x2="${cx+len+10}" y2="${cy}" stroke="#8b949e" stroke-width="2"/>`;
+    h+=`<circle cx="${cx}" cy="${cy}" r="5" fill="#fbbf24"/>`;
+    const center=centers[0];
+    center.groups.forEach((gk,i)=>{
+      const g=GROUP_LIB[gk],p=pm[i],rank=center.cipOrder.indexOf(i)+1;
+      let ox=0,oy=5;
+      if(i===0)oy=-16;if(i===2)oy=22;if(i===1)ox=20;if(i===3)ox=-20;
+      h+=`<text x="${p.x+ox}" y="${p.y+oy}" fill="#e6edf3" font-size="14" font-weight="600" text-anchor="middle">${g.name}</text>`;
+      // 序号放在官能团外侧（远离中心），避免遮挡文字
+      let bx,by;
+      if(i===0){bx=p.x;by=p.y+oy-18;}
+      else if(i===1){bx=p.x+ox+24;by=p.y+oy;}
+      else if(i===2){bx=p.x;by=p.y+oy+20;}
+      else{bx=p.x+ox-24;by=p.y+oy;}
+      h+=`<circle cx="${bx}" cy="${by}" r="7" fill="${rc[rank-1]}"/>`;
+      h+=`<text x="${bx}" y="${by+4}" fill="#0d1117" font-size="10" font-weight="700" text-anchor="middle">${rank}</text>`;
+    });
+    h+=`<text x="${cx}" y="${cy+len+72}" fill="${center.rs==='R'?'#f87171':'#60a5fa'}" font-size="15" font-weight="700" text-anchor="middle">${center.rs} 构型</text>`;
+  }else{
+    // 多手性中心：垂直碳链
+    // 绘制竖线（碳链）
+    const topY=startY-unitH/2-15, botY=startY+(n-1)*unitH+unitH/2+15;
+    h+=`<line x1="${cx}" y1="${topY}" x2="${cx}" y2="${botY}" stroke="#8b949e" stroke-width="2"/>`;
+    // 顶部端基（第一个中心的top基团）
+    const topG=GROUP_LIB[centers[0].groups[0]];
+    h+=`<text x="${cx}" y="${topY-8}" fill="#e6edf3" font-size="13" font-weight="600" text-anchor="middle">${topG.name}</text>`;
+    // 底部端基（最后一个中心的bottom基团）
+    const botG=GROUP_LIB[centers[n-1].groups[2]];
+    h+=`<text x="${cx}" y="${botY+18}" fill="#e6edf3" font-size="13" font-weight="600" text-anchor="middle">${botG.name}</text>`;
+
+    centers.forEach((center,ci)=>{
+      const cy=startY+ci*unitH;
+      const len=45;
+      // 横线
+      h+=`<line x1="${cx-len}" y1="${cy}" x2="${cx+len}" y2="${cy}" stroke="#8b949e" stroke-width="2"/>`;
+      h+=`<circle cx="${cx}" cy="${cy}" r="4" fill="${ci===currentCenterIdx?'#fbbf24':'#6e7681'}"/>`;
+      // 左右基团
+      const leftG=GROUP_LIB[center.groups[3]], rightG=GROUP_LIB[center.groups[1]];
+      const rankL=center.cipOrder.indexOf(3)+1, rankR=center.cipOrder.indexOf(1)+1;
+      h+=`<text x="${cx-len-8}" y="${cy+5}" fill="#e6edf3" font-size="13" font-weight="600" text-anchor="end">${leftG.name}</text>`;
+      h+=`<text x="${cx+len+8}" y="${cy+5}" fill="#e6edf3" font-size="13" font-weight="600" text-anchor="start">${rightG.name}</text>`;
+      // 优先级编号
+      h+=`<circle cx="${cx-len-22}" cy="${cy-4}" r="6" fill="${rc[rankL-1]}"/>`;
+      h+=`<text x="${cx-len-22}" y="${cy-1}" fill="#0d1117" font-size="9" font-weight="700" text-anchor="middle">${rankL}</text>`;
+      h+=`<circle cx="${cx+len+22}" cy="${cy-4}" r="6" fill="${rc[rankR-1]}"/>`;
+      h+=`<text x="${cx+len+22}" y="${cy-1}" fill="#0d1117" font-size="9" font-weight="700" text-anchor="middle">${rankR}</text>`;
+      // R/S标记
+      h+=`<text x="${cx+len+40}" y="${cy+5}" fill="${center.rs==='R'?'#f87171':'#60a5fa'}" font-size="12" font-weight="700" text-anchor="start">${center.rs}</text>`;
+      // 手性碳编号
+      h+=`<text x="${cx-8}" y="${cy-8}" fill="#6e7681" font-size="10" text-anchor="end">C${ci+1}</text>`;
+    });
+  }
+  svg.innerHTML=h;
+  document.getElementById('projNote').innerHTML='横键朝前 · 竖键朝后<br>最小基团在竖键：顺R逆S；在横键：顺S逆R';
+}
+function drawNewman(){
+  const svg=document.getElementById('projSvg');
+  const center=currentMol.centers[currentCenterIdx];
+  const cx=130,cy=100,R=45,r=12;
+  // 沿最低优先级基团与手性碳的键观察：最低优先级在后方，其余三个在前方呈120°
+  const lowestIdx=center.cipOrder[3];
+  const frontIdx=center.cipOrder.slice(0,3);
+  const backG=GROUP_LIB[center.groups[lowestIdx]];
+  let h=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fbbf24" stroke="#e6edf3" stroke-width="2"/>`;
+  // 后方基团（最低优先级）：从圆圈后方伸出，蓝色虚线
+  const backAng=90*Math.PI/180;
+  const bex=cx+R*Math.cos(backAng),bey=cy+R*Math.sin(backAng);
+  h+=`<line x1="${cx}" y1="${cy}" x2="${bex}" y2="${bey}" stroke="#60a5fa" stroke-width="2" stroke-dasharray="4,2"/>`;
+  h+=`<text x="${cx+(R+20)*Math.cos(backAng)}" y="${cy+(R+20)*Math.sin(backAng)+4}" fill="#60a5fa" font-size="12" font-weight="600" text-anchor="middle">${backG.name}(后)</text>`;
+  // 前方三个基团（青色实线），120°分布
+  const frontAngles=[-90,30,150];
+  frontIdx.forEach((gi,i)=>{
+    const ang=frontAngles[i]*Math.PI/180;
+    const ex=cx+R*Math.cos(ang),ey=cy+R*Math.sin(ang);
+    h+=`<line x1="${cx}" y1="${cy}" x2="${ex}" y2="${ey}" stroke="#00d4aa" stroke-width="2.5"/>`;
+    const g=GROUP_LIB[center.groups[gi]];
+    const lx=cx+(R+18)*Math.cos(ang),ly=cy+(R+18)*Math.sin(ang);
+    h+=`<text x="${lx}" y="${ly+4}" fill="#00d4aa" font-size="12" font-weight="600" text-anchor="middle">${g.name}</text>`;
+  });
+  h+=`<text x="${cx}" y="188" fill="${center.rs==='R'?'#f87171':'#60a5fa'}" font-size="14" font-weight="700" text-anchor="middle">沿C*—${backG.name}键观察 · ${center.rs} 构型</text>`;
+  svg.innerHTML=h;
+  document.getElementById('projNote').innerHTML='Newman投影式：沿最低优先级基团与手性碳的键观察<br>青色=前方三个基团，蓝色虚线=后方最低优先级基团';
+}
+
+/* ===== 练习模式 ===== */
+const QUIZ_POOL=[
+  // 基础：羟基/羧基/烷基
+  ['OH','COOH','CH3','H'],['OH','COOH','C2H5','H'],['OH','CHO','CH2OH','H'],
+  ['OH','Ph','CH3','H'],['OH','CH2OH','CHO','H'],['OH','COCH3','CH3','H'],
+  // 氨基/氨基酸类
+  ['NH2','COOH','CH3','H'],['NH2','COOH','CH2OH','H'],['NH2','COOH','iPr','H'],
+  ['NH2','COOH','Bn','H'],['NH2','CH3','Ph','H'],['NH2','COOH','CH2SH','H'],
+  // 卤代烃
+  ['Cl','C2H5','CH3','H'],['Cl','COOH','CH3','H'],['Br','CH3','C2H5','H'],
+  ['Br','COOH','CH3','H'],['F','CH3','C2H5','H'],['I','CH3','C2H5','H'],
+  ['Cl','Ph','CH3','H'],['Br','Ph','CH3','H'],
+  // 含硫/醚
+  ['SH','CH3','C2H5','H'],['SCH3','COOH','CH3','H'],['OCH3','COOH','CH3','H'],
+  ['OCH3','CH3','C2H5','H'],
+  // 硝基/氰基/羰基
+  ['NO2','CH3','Ph','H'],['CN','Ph','CH3','H'],['CN','COOH','CH3','H'],
+  ['CHO','CH2OH','CH3','H'],['COCH3','Ph','CH3','H'],
+  // 烷基比较（异丙基/叔丁基）
+  ['iPr','CH3','C2H5','H'],['tBu','CH3','C2H5','H'],['iPr','tBu','CH3','H'],
+  ['nPr','iPr','CH3','H'],
+  // 烯基/炔基
+  ['Vinyl','CH3','C2H5','H'],['Ethynyl','Ph','CH3','H'],['Allyl','CH3','C2H5','H'],
+];
+function setQuizType(t,el){
+  quizState.type=t;
+  document.querySelectorAll('.quiz-type-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  nextQuiz();
+}
+function nextQuiz(){
+  quizState.answered=false;
+  document.getElementById('quizExplain').classList.remove('show');
+  // 新题目自动显示模型
+  const v=document.getElementById('viewer3d');
+  v.style.opacity='1';
+  const btn=document.getElementById('btnHideModel');
+  if(btn)btn.textContent='隐藏模型';
+  const msg=document.getElementById('modelHiddenMsg');
+  if(msg)msg.remove();
+  const groups=QUIZ_POOL[Math.floor(Math.random()*QUIZ_POOL.length)].slice().sort(()=>Math.random()-0.5);
+  const wedgeOpts=[['plain','down','plain','up'],['plain','up','plain','down'],['up','plain','down','plain'],['down','plain','up','plain']];
+  const wedge=wedgeOpts[Math.floor(Math.random()*wedgeOpts.length)];
+  const mol={name:'练习题',note:'随机生成',centers:[{groups,wedge}]};
+  loadMolecule(mol);
+  // 练习模式隐藏答案overlay，防止泄露
+  document.getElementById('viewerOverlay').style.display='none';
+  // 确保3D视图正确适配容器大小并居中
+  requestAnimationFrame(()=>resizeViewer(true));
+  setTimeout(()=>resizeViewer(true),200);
+  quizState.answer=mol.centers[0].rs;
+  const q=document.getElementById('quizQuestion');
+  const opts=document.getElementById('quizOptions');
+  if(quizState.type==='rs'){
+    q.textContent='判断下方化合物手性碳的构型（可旋转模型、切换判断视角）：';
+    opts.innerHTML=`<button class="quiz-opt" onclick="answerQuiz('R')">R 构型</button><button class="quiz-opt" onclick="answerQuiz('S')">S 构型</button>`;
+  }else if(quizState.type==='cip'){
+    q.textContent='下列四个基团中，CIP优先级最高的是？';
+    const center=mol.centers[0];
+    opts.innerHTML=center.groups.map((gk,i)=>
+      `<button class="quiz-opt" style="font-size:14px" onclick="answerQuiz('${i}')">${GROUP_LIB[gk].name}</button>`
+    ).join('');
+    quizState.cipAnswer=center.cipOrder[0];
+  }else{
+    q.textContent='将该化合物转换为Fischer投影式后，手性碳构型为？（提示：横前竖后）';
+    opts.innerHTML=`<button class="quiz-opt" onclick="answerQuiz('R')">R 构型</button><button class="quiz-opt" onclick="answerQuiz('S')">S 构型</button>`;
+  }
+}
+function answerQuiz(ans){
+  if(quizState.answered)return;
+  quizState.answered=true;
+  let correct=false;
+  const opts=document.querySelectorAll('.quiz-opt');
+  if(quizState.type==='cip'){
+    correct=parseInt(ans)===quizState.cipAnswer;
+    opts.forEach((b,i)=>{
+      b.disabled=true;
+      if(i===quizState.cipAnswer)b.classList.add('correct');
+      else if(i===parseInt(ans)&&!correct)b.classList.add('wrong');
+    });
+  }else{
+    correct=ans===quizState.answer;
+    opts.forEach(b=>{
+      b.disabled=true;
+      if(b.textContent.startsWith(quizState.answer))b.classList.add('correct');
+      else if(b.textContent.startsWith(ans)&&!correct)b.classList.add('wrong');
+    });
+  }
+  if(correct)quizState.correct++;else quizState.wrong++;
+  updateQuizScore();
+  const center=currentMol.centers[0];
+  const g0=GROUP_LIB[center.groups[center.cipOrder[0]]],g3=GROUP_LIB[center.groups[center.cipOrder[3]]];
+  const cipNames=center.cipOrder.map(i=>GROUP_LIB[center.groups[i]].name);
+  document.getElementById('quizExplain').innerHTML=
+    `<strong style="color:${correct?'var(--p3)':'var(--r-color)'}">${correct?'✓ 回答正确！':'✗ 回答错误，正确答案：'+center.rs+' 构型'}</strong><br><br>`+
+    `<strong>CIP 优先级排序：</strong><br>`+
+    `① ${cipNames[0]} &gt; ② ${cipNames[1]} &gt; ③ ${cipNames[2]} &gt; ④ ${cipNames[3]}<br><br>`+
+    `<strong>判断过程：</strong><br>`+
+    `将最小基团「${g3.name}」置于远离观察者的位置（背面），<br>`+
+    `观察 ①${g0.name} → ②${cipNames[1]} → ③${cipNames[2]} 的方向：<br>`+
+    `方向为<strong>${center.rs==='R'?'顺时针':'逆时针'}</strong>，故为 <strong style="color:var(--accent)">${center.rs} 构型</strong>。<br><br>`+
+    `<span style="color:var(--text3)">💡 可点击「判断视角」按钮，自动将最小基团旋转到背面，直观验证。</span>`;
+  document.getElementById('quizExplain').classList.add('show');
+}
+function updateQuizScore(){
+  document.getElementById('quizCorrect').textContent=quizState.correct;
+  document.getElementById('quizWrong').textContent=quizState.wrong;
+  const t=quizState.correct+quizState.wrong;
+  document.getElementById('quizRate').textContent=t>0?Math.round(quizState.correct/t*100)+'%':'0%';
+}
+function resetQuiz(){
+  quizState={correct:0,wrong:0,answer:null,answered:false,type:quizState.type};
+  updateQuizScore();nextQuiz();
+}
+
+/* ===== 工具 ===== */
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+function showLoading(s){document.getElementById('loading').classList.toggle('show',s);}
+</script>
+</body>
+</html>
